@@ -29,7 +29,7 @@ jobs:
         outputs: type=docker,dest=/tmp/proxyimage.tar
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: proxy-image
         path: /tmp/proxyimage.tar
