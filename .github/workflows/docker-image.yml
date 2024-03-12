@@ -50,4 +50,9 @@ jobs:
         docker load --input /tmp/proxyimage.tar
         docker image ls -a          
 
+    - name: Push to DockerHub
+      run: |
+        docker login -u petefield -p ${{ secrets.DOCKERHUB_TOKEN }}
+        docker coker push proxyimage:latest
+
 
