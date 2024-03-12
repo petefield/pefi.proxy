@@ -17,12 +17,12 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build the Docker image
       working-directory: ./src
-      run: docker build . --file Dockerfile --tag petefield/home:$(date +%s) --output type=tar,dest=proxy_image.tar
+      run: docker build . --file Dockerfile --tag petefield/home:$(date +%s) --output type=docker,dest=/tmp/proxy_image.tar
     - uses: actions/upload-artifact@v4
       name: Upload the Docker image to artifacts
       with:
-        name: my-artifact
-        path: ./src/proxy_image.tar
+        name: proxy_image
+        path: /tmp/proxy_image.tar
 
   push:
 
@@ -31,9 +31,13 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: my-artifact
+        name: proxy_image
+        path: /tmp
     - name: Display structure of downloaded files
       run: ls -R
     - name: load
-      run: docker load < ./proxy_image.tar
+      run: |
+        docker load --input /tmp/proxy_image.tar
+        docker image ls -a          
+
 
