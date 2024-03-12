@@ -25,7 +25,7 @@ jobs:
       with:
         file: ./src/Dockerfile
         context: ./src
-        tags: proxyimage:latest
+        tags: petefield/home:latest
         outputs: type=docker,dest=/tmp/proxyimage.tar
 
     - name: Upload artifact
