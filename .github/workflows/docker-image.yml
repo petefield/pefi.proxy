@@ -18,3 +18,14 @@ jobs:
     - name: Build the Docker image
       working-directory: ./src
       run: docker build . --file Dockerfile --tag petefield/home:$(date +%s)
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name : Login to Docker
+        working-directory: ./src
+        run: docker login -u petefield -p  ${{ secrets.DOCKERHUB_TOKEN }}
+        
+      - name: Publish the Docker image
+        working-directory: ./src
+        run: docker push 
