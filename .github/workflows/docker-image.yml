@@ -35,5 +35,5 @@ jobs:
     - name: Display structure of downloaded files
       run: ls -R
     - name: load
-      run: docker load --input ./proxy_image.tar
+      run: docker load < ./proxy_image.tar
 
