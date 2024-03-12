@@ -14,15 +14,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      working-directory: ./src
-      run: docker build . --file Dockerfile --tag petefield/home:$(date +%s) --output type=docker,dest=/tmp/proxy_image.tar
-    - uses: actions/upload-artifact@v4
-      name: Upload the Docker image to artifacts
+    - name: checkout 
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and export
+      uses: docker/build-push-action@v5
       with:
-        name: proxy_image
-        path: /tmp/proxy_image.tar
+        file: ./src/Dockerfile
+        context: ./src
+        tags: proxyimage:latest
+        outputs: type=docker,dest=/tmp/proxyimage.tar
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: proxyimage
+        path: /tmp/proxyimage.tar
 
   push:
 
@@ -31,13 +41,12 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: proxy_image
+        name: proxyimage
         path: /tmp
-    - name: Display structure of downloaded files
-      run: ls -R
+
     - name: load
       run: |
-        docker load --input /tmp/proxy_image.tar
+        docker load --input /tmp/proxyimage.tar
         docker image ls -a          
 
 
