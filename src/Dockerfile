@@ -9,17 +9,17 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["PeFi.Proxy.csproj", "."]
-RUN dotnet restore "./././PeFi.Proxy.csproj"
+COPY ["pefi.proxy.csproj", "."]
+RUN dotnet restore "./././pefi.proxy.csproj"
 COPY . .
 WORKDIR "/src/."
-RUN dotnet build "./PeFi.Proxy.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./pefi.proxy.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./PeFi.Proxy.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./pefi.proxy.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "PeFi.Proxy.dll"]
+ENTRYPOINT ["dotnet", "pefi.proxy.dll"]
