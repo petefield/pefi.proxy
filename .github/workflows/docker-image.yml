@@ -53,6 +53,6 @@ jobs:
     - name: Push to DockerHub
       run: |
         docker login -u petefield -p ${{ secrets.DOCKERHUB_TOKEN }}
-        docker push proxyimage:latest
+        docker push petefield/home:latest
 
 
