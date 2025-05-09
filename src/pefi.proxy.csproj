@@ -11,7 +11,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
+    <PackageReference Include="pefi.messaging.rabbit" Version="1.0.0-ci-20250508.8" />
     <PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
+	  <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
+
   </ItemGroup>
 
 </Project>
