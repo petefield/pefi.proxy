@@ -32,7 +32,7 @@ jobs:
     - name: Build
       uses: docker/build-push-action@v6
       with:
-        directory: src
+        context: ./src
         tags: ghcr.io/${{ github.repository }}
         secrets: |
             "github_token=${{ secrets.GITHUB_TOKEN }}"
