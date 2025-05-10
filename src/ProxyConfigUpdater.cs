@@ -12,7 +12,7 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Timed Background Service running.");
+        logger.LogInformation("Proxy Config Updater is listenting for new services.");
         _topic = await messageBroker.CreateTopic("Events");
         await _topic.Subscribe("#", async (key, message) => await UpdateConfig());
         await UpdateConfig();
