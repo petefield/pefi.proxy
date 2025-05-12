@@ -3,8 +3,11 @@
 namespace PeFi.Proxy;
 public static class  Mappers
 {
-    public static RouteConfig ToRouteConfig(this ServiceDescription service)
+    public static RouteConfig? ToRouteConfig(this ServiceDescription service)
     {
+        if (service.HostName == null)
+            return null;
+
         return new RouteConfig
         {
             RouteId = service.ServiceName,
@@ -17,8 +20,12 @@ public static class  Mappers
     }
 
 
-    public static ClusterConfig ToClusterConfig(this ServiceDescription service)
+    public static ClusterConfig? ToClusterConfig(this ServiceDescription service)
     {
+
+        if (service.HostPortNumber == null)
+            return null;
+
         return new ClusterConfig
         {
             ClusterId = service.ServiceName,

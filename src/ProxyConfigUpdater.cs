@@ -22,9 +22,19 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
     {
         var allServices = (await dataStore.Get<ServiceDescription>("ServiceDb", "services")).ToList();
 
-        var routes = allServices.Select(serviceDescription => serviceDescription.ToRouteConfig()).ToList();
-        var clusters = allServices.Select(serviceDescription => serviceDescription.ToClusterConfig()).ToList();
+        var routes = allServices
+            .Select(serviceDescription => serviceDescription.ToRouteConfig())
+            .Where(route => route != null)
+            .Select(x=>x!)
+            .ToList();
 
-        configProvider.Update(routes, clusters);
+        var clusters = allServices
+            .Select(serviceDescription => serviceDescription.ToClusterConfig())
+            .Where(cluster => cluster != null)
+            .Select(x=>x!)
+            .ToList();
+
+        if (routes != null  && clusters != null)
+            configProvider.Update(routes, clusters);
     }   
 }
