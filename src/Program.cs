@@ -19,7 +19,7 @@ var app = builder.Build();
 
 app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider  appSettingsConfigProvider ) => {
     var appSettingsConfig = appSettingsConfigProvider.GetConfig();
-    var memoryConfig = appSettingsConfigProvider.GetConfig();
+    var memoryConfig = memoryConfigProvider.GetConfig();
 
     return new{
         Routes =  appSettingsConfig.Routes.Concat(memoryConfig.Routes),
