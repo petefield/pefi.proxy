@@ -1,4 +1,3 @@
-using MongoDB.Bson;
 using pefi.Rabbit;
 using PeFi.Proxy;
 using PeFi.Proxy.Persistance;
