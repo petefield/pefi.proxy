@@ -1,12 +1,12 @@
+using pefi.dynamicdns.Services;
 using pefi.Rabbit;
 using PeFi.Proxy;
-using PeFi.Proxy.Persistance;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpClient<ServiceManagerClient>(c => c.BaseAddress = new Uri("http://192.168.0.5:5550"));
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSingleton<IDataStore, MongoDatastore>();
 builder.Services.AddHostedService<ProxyConfig>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddReverseProxy()

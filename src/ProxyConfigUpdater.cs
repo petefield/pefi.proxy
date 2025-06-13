@@ -1,5 +1,5 @@
-﻿using pefi.Rabbit;
-using PeFi.Proxy.Persistance;
+﻿using pefi.dynamicdns.Services;
+using pefi.Rabbit;
 using Yarp.ReverseProxy.Configuration;
 
 namespace PeFi.Proxy;
@@ -7,25 +7,25 @@ namespace PeFi.Proxy;
 public class ProxyConfig(ILogger<ProxyConfig> logger,
     IMessageBroker messageBroker,
     InMemoryConfigProvider configProvider,
-    IDataStore dataStore) : BackgroundService
+    ServiceManagerClient serviceManagerClient) : BackgroundService
 {
     private ITopic? _topic;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Proxy Config Updater is listenting for new services.");
-        
+
         _topic = await messageBroker.CreateTopic("Events");
 
-        await _topic.Subscribe("#", async (key, message) 
-            => await UpdateConfig());
-
+        await _topic.Subscribe("events.service.#",  async(key, message) => { 
+            await UpdateConfig();
+        });
         await UpdateConfig();
     }
 
     private async Task UpdateConfig()
     {
-        var allServices = (await dataStore.Get<ServiceDescription>("ServiceDb", "services")).ToList();
+        var allServices = await serviceManagerClient.Get_All_ServicesAsync();
 
         var routes = allServices
             .Select(serviceDescription => serviceDescription.ToRouteConfig())

@@ -1,37 +1,38 @@
-﻿using Yarp.ReverseProxy.Configuration;
+﻿using pefi.dynamicdns.Services;
+using Yarp.ReverseProxy.Configuration;
 
 namespace PeFi.Proxy;
 public static class  Mappers
 {
-    public static RouteConfig? ToRouteConfig(this ServiceDescription service)
+    public static RouteConfig? ToRouteConfig(this GetServiceResponse service)
     {
-        if (service.HostName == null)
+        if (service.hostName == null)
             return null;
 
         return new RouteConfig
         {
-            RouteId = service.ServiceName,
-            ClusterId = service.ServiceName,
+            RouteId = service.serviceName,
+            ClusterId = service.serviceName,
             Match = new RouteMatch
             {
-                Hosts = [ service.HostName ],
+                Hosts = [ service.hostName ],
             }
         };
     }
 
 
-    public static ClusterConfig? ToClusterConfig(this ServiceDescription service)
+    public static ClusterConfig? ToClusterConfig(this GetServiceResponse service)
     {
 
-        if (service.HostPortNumber == null)
+        if (service.hostPortNumber == null)
             return null;
 
         return new ClusterConfig
         {
-            ClusterId = service.ServiceName,
+            ClusterId = service.serviceName,
             Destinations = new Dictionary<string, DestinationConfig>(StringComparer.OrdinalIgnoreCase)
             {
-                { service.ServiceName, new DestinationConfig() { Address = $"http://host.docker.internal:{service.HostPortNumber}" } }
+                { service.serviceName, new DestinationConfig() { Address = $"http://host.docker.internal:{service.hostPortNumber}" } }
             }
         };
     }
