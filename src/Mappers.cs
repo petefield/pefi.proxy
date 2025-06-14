@@ -15,7 +15,7 @@ public static class  Mappers
             ClusterId = service.serviceName,
             Match = new RouteMatch
             {
-                Hosts = [ service.hostName ],
+                Hosts = [ $"{service.hostName}.pefi.co.uk" ],
             }
         };
     }
