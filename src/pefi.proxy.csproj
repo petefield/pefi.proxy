@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -7,11 +7,20 @@
     <UserSecretsId>aaa97c5e-9ccf-4920-99db-3b97e39af612</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Services\service_mgr_openapi.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Services\service_mgr_openapi.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
-    <PackageReference Include="pefi.http" Version="1.0.0-ci-20250610.1" />
+    <PackageReference Include="pefi.http" Version="1.0.0-ci-20250614.3" />
     <PackageReference Include="pefi.messaging.rabbit" Version="1.0.0-ci-20250508.8" />
     <PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
 	  <PackageReference Include="MongoDB.Driver" Version="3.4.0" />

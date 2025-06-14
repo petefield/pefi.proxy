@@ -1,7 +1,7 @@
 ﻿
 namespace pefi.dynamicdns.Services
 {
-    [http.GenerateHttpClient("http://192.168.0.5:5550/swagger/v1/swagger.json")]
+    [http.GenerateHttpClient("service_mgr_openapi.json")]
     public partial class ServiceManagerClient
     {
 

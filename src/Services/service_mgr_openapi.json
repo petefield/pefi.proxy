@@ -1,0 +1,196 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "pefi.servicemanager",
+    "version": "1.0"
+  },
+  "paths": {
+    "/services": {
+      "get": {
+        "tags": [
+          "pefi.servicemanager"
+        ],
+        "operationId": "Get All Services",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GetServiceResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pefi.servicemanager"
+        ],
+        "operationId": "Create Service",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreateServiceResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{serviceName}": {
+      "get": {
+        "tags": [
+          "pefi.servicemanager"
+        ],
+        "operationId": "Get Service By Name",
+        "parameters": [
+          {
+            "name": "serviceName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetServiceResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "pefi.servicemanager"
+        ],
+        "operationId": "Delete Service",
+        "parameters": [
+          {
+            "name": "serviceName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateServiceRequest": {
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "hostName": {
+            "type": "string",
+            "nullable": true
+          },
+          "containerPortNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "hostPortNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "dockerImageUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateServiceResponse": {
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "hostName": {
+            "type": "string",
+            "nullable": true
+          },
+          "containerPortNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "hostPortNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "dockerImageUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetServiceResponse": {
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "hostName": {
+            "type": "string",
+            "nullable": true
+          },
+          "containerPortNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "hostPortNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "dockerImageUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
