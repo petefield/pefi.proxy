@@ -19,6 +19,12 @@ jobs:
       id-token: write
       
     steps:
+
+    - name: Install Dotnet 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9'
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
