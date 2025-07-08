@@ -32,7 +32,7 @@ public static class  Mappers
             ClusterId = service.serviceName,
             Destinations = new Dictionary<string, DestinationConfig>(StringComparer.OrdinalIgnoreCase)
             {
-                { service.serviceName, new DestinationConfig() { Address = $"http://192.168.1.86:{service.hostPortNumber}" } }
+                { service.serviceName, new DestinationConfig() { Address = $"http://host.docker.internal:{service.hostPortNumber}" } }
             }
         };
     }
