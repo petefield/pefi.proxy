@@ -21,6 +21,11 @@ namespace pefi
             return services.AddSingleton<IMessageBroker>(sp => {
 
                 var options = sp.GetRequiredService<IOptions<MessagingConfig>>().Value;
+
+                var log = sp.GetRequiredService<ILogger>();
+
+                log.LogInformation($"Messaging : {options.Username} {options.Password}, {options.Address}");
+
                 return new MessageBroker(options.Address, options.Username, options.Password);
 
             } );
