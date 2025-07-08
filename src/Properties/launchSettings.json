@@ -4,7 +4,11 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Messaging__Username": "username",
+        "Messaging__Password": "password",
+        "Messaging__Address": "192.168.1.86",
+        "ServiceManager__baseurl": "http://192.168.1.86:5550"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5053"

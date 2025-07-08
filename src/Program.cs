@@ -1,11 +1,21 @@
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using pefi;
 using pefi.dynamicdns.Services;
-using pefi.Rabbit;
 using PeFi.Proxy;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
-builder.Services.AddHttpClient<ServiceManagerClient>(c => c.BaseAddress = new Uri("http://192.168.0.5:5550"));
+builder.Services.AddHttpClient<ServiceManagerClient>((sp,c) => {
+    var baseAddress = builder.Configuration.GetSection("ServiceManager").GetValue<string>("baseurl") ?? "";
+    c.BaseAddress = new Uri(baseAddress); 
+});
+
+
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHostedService<ProxyConfig>();
 builder.Services.AddSwaggerGen();
@@ -13,7 +23,13 @@ builder.Services.AddReverseProxy()
     .LoadFromMemory([], [])
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-builder.Services.AddSingleton<IMessageBroker>(sp => new MessageBroker("192.168.0.5", "username", "password"));
+
+builder.Services.AddPeFiMessaging(options => {
+    options.Username = builder.Configuration.GetSection("Messaging").GetValue<string>("username") ?? "";
+    options.Password = builder.Configuration.GetSection("Messaging").GetValue<string>("password") ?? "";
+    options.Address = builder.Configuration.GetSection("Messaging").GetValue<string>("address") ?? "";
+});
+
 
 var app = builder.Build();
 
@@ -32,12 +48,6 @@ app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseRouting();
-
 app.MapReverseProxy();
-
-
-
-
-
 app.Run();
 
