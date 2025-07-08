@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using pefi.Rabbit;
+using PeFi.Proxy;
 
 namespace pefi
 {
@@ -22,7 +23,7 @@ namespace pefi
 
                 var options = sp.GetRequiredService<IOptions<MessagingConfig>>().Value;
 
-                var log = sp.GetRequiredService<ILogger>();
+                var log = sp.GetRequiredService<ILogger<ProxyConfig>>();
 
                 log.LogInformation($"Messaging : {options.Username} {options.Password}, {options.Address}");
 
