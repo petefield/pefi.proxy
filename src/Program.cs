@@ -8,6 +8,7 @@ using Yarp.ReverseProxy.Configuration;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Logging.AddConsole();
+
 builder.Services.AddHttpClient<ServiceManagerClient>((sp,c) => {
     var baseAddress = builder.Configuration.GetSection("ServiceManager").GetValue<string>("baseurl") ?? "";
     c.BaseAddress = new Uri(baseAddress); 
