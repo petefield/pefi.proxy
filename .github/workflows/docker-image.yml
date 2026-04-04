@@ -3,15 +3,19 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
 
+  test:
+    uses: ./.github/workflows/tests.yml
+    secrets: inherit
+
   build:
 
     runs-on: ubuntu-latest
+
+    needs: test
 
     permissions:
       contents: read
