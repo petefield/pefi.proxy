@@ -1,0 +1,38 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+
+  test:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Configure NuGet private feed
+      run: dotnet nuget add source --username petefield --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name petefield "https://nuget.pkg.github.com/petefield/index.json"
+
+    - name: Restore dependencies
+      run: dotnet restore tests/pefi.proxy.tests/pefi.proxy.tests.csproj
+
+    - name: Build test project
+      run: dotnet build tests/pefi.proxy.tests/pefi.proxy.tests.csproj --no-restore
+
+    - name: Run tests
+      run: dotnet test tests/pefi.proxy.tests/pefi.proxy.tests.csproj --no-build --verbosity normal
