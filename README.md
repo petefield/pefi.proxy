@@ -51,9 +51,9 @@ Configuration is loaded from `appsettings.json`, environment-specific overrides 
 | Setting | Environment Variable | Description |
 |---|---|---|
 | `ServiceManager:baseurl` | `ServiceManager__baseurl` | Base URL of the Service Manager API |
-| `Messaging:address` | `Messaging__Address` | RabbitMQ broker hostname or IP |
-| `Messaging:username` | `Messaging__Username` | RabbitMQ username |
-| `Messaging:password` | `Messaging__Password` | RabbitMQ password |
+| `Messaging:Address` | `Messaging__Address` | RabbitMQ broker hostname or IP |
+| `Messaging:Username` | `Messaging__Username` | RabbitMQ username |
+| `Messaging:Password` | `Messaging__Password` | RabbitMQ password |
 
 ### Static Routes
 
