@@ -127,6 +127,23 @@ docker run -p 8080:8080 \
 | `/config` | GET | Returns the current merged proxy configuration (routes + clusters) |
 | `/swagger` | GET | Swagger UI for exploring available endpoints |
 
+## Testing
+
+The solution includes an xUnit test project covering the main components of the proxy.
+
+```bash
+# Run all tests
+dotnet test tests/pefi.proxy.tests/pefi.proxy.tests.csproj
+```
+
+| Test class | What it covers |
+|---|---|
+| `MappersTests` | Unit tests for `Mappers.cs` – verifies that `ServiceDescription` objects are correctly converted to YARP `RouteConfig` and `ClusterConfig` instances, including null-safety for missing hostname or port. |
+| `ProxyConfigUpdaterTests` | Unit tests for `ProxyConfigUpdater` – verifies RabbitMQ topic creation, subscription to `events.service.#`, startup service loading, and in-memory config updates (filtering services with null hostname/port). |
+| `ConfigEndpointTests` | Integration tests using `WebApplicationFactory<Program>` – verifies that the `/config` endpoint returns HTTP 200 with a JSON body containing routes and clusters, and that static routes from `appsettings.json` are present. |
+
+Dependencies used in tests: [xUnit](https://xunit.net/), [NSubstitute](https://nsubstitute.github.io/), and `Microsoft.AspNetCore.Mvc.Testing`.
+
 ## Project Structure
 
 ```
@@ -147,6 +164,13 @@ pefi.proxy/
 │   ├── appsettings.Development.json     # Development logging overrides
 │   ├── Dockerfile                       # Multi-stage Docker build
 │   └── pefi.proxy.csproj               # Project file (.NET 9.0)
+├── tests/
+│   └── pefi.proxy.tests/
+│       ├── MappersTests.cs              # Unit tests for route/cluster mapping
+│       ├── ProxyConfigUpdaterTests.cs   # Unit tests for the background config updater
+│       ├── ConfigEndpointTests.cs       # Integration tests for the /config endpoint
+│       ├── MockHttpMessageHandler.cs    # Fake HTTP handler used in tests
+│       └── pefi.proxy.tests.csproj     # Test project file (xUnit, NSubstitute)
 └── LICENSE                              # GNU AGPLv3
 ```
 
