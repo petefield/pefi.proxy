@@ -11,7 +11,7 @@ public static class  Mappers
 
         return new RouteConfig
         {
-            RouteId = service.serviceName,
+            RouteId = service.serviceName!,
             ClusterId = service.serviceName,
             Match = new RouteMatch
             {
@@ -29,10 +29,10 @@ public static class  Mappers
 
         return new ClusterConfig
         {
-            ClusterId = service.serviceName,
+            ClusterId = service.serviceName!,
             Destinations = new Dictionary<string, DestinationConfig>(StringComparer.OrdinalIgnoreCase)
             {
-                { service.serviceName, new DestinationConfig() { Address = $"http://host.docker.internal:{service.hostPortNumber}" } }
+                { service.serviceName!, new DestinationConfig() { Address = $"http://host.docker.internal:{service.hostPortNumber}" } }
             }
         };
     }
