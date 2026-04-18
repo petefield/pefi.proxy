@@ -9,28 +9,23 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Logging.AddConsole();
 
-builder.Services.AddHttpClient<ServiceManagerClient>((sp,c) => {
-    var baseAddress = builder.Configuration.GetSection("ServiceManager").GetValue<string>("baseurl") ?? "";
-    c.BaseAddress = new Uri(baseAddress); 
-});
-
-
-
+// builder.Services.AddHttpClient<ServiceManagerClient>((sp,c) => {
+//     var baseAddress = builder.Configuration.GetSection("ServiceManager").GetValue<string>("baseurl") ?? "";
+//     c.BaseAddress = new Uri(baseAddress); 
+// });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHostedService<ProxyConfig>();
+//builder.Services.AddHostedService<ProxyConfig>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddReverseProxy()
     .LoadFromMemory([], [])
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
-
 
 builder.Services.AddPeFiMessaging(options => {
     options.Username = builder.Configuration.GetSection("Messaging").GetValue<string>("username") ?? "";
     options.Password = builder.Configuration.GetSection("Messaging").GetValue<string>("password") ?? "";
     options.Address = builder.Configuration.GetSection("Messaging").GetValue<string>("address") ?? "";
 });
-
 
 var app = builder.Build();
 

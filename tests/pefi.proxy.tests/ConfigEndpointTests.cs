@@ -81,8 +81,8 @@ public class ConfigEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 
         var body = await response.Content.ReadFromJsonAsync<ConfigResponse>();
         Assert.NotNull(body);
-        // The static route "servicemanager" is defined in appsettings.json
-        Assert.Contains(body.routes, r => r.routeId == "servicemanager");
+        // The static route "immich" is defined in appsettings.json
+        Assert.Contains(body.routes, r => r.routeId == "immich");
     }
 
     [Fact]
