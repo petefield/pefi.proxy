@@ -59,7 +59,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        file: ./pefi.dynamicdns/Dockerfile
+        file: ./src/Dockerfile
         tags: |
           petefield/pefi.proxy:latest
           petefield/pefi.proxy:${{ steps.gitversion.outputs.semVer }}
