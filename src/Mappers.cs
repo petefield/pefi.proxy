@@ -2,7 +2,7 @@
 using Yarp.ReverseProxy.Configuration;
 
 namespace PeFi.Proxy;
-public static class  Mappers
+public static class Mappers
 {
     public static RouteConfig? ToRouteConfig(this GetServiceResponse service)
     {

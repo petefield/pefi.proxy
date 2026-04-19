@@ -1,0 +1,12 @@
+.git
+.github
+.gitignore
+.env
+.env.example
+*.md
+LICENSE
+**/.vs
+**/bin
+**/obj
+**/node_modules
+docker-compose.yml
