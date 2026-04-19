@@ -1,21 +1,11 @@
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
 using pefi;
-using pefi.dynamicdns.Services;
-using PeFi.Proxy;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Logging.AddConsole();
 
-// builder.Services.AddHttpClient<ServiceManagerClient>((sp,c) => {
-//     var baseAddress = builder.Configuration.GetSection("ServiceManager").GetValue<string>("baseurl") ?? "";
-//     c.BaseAddress = new Uri(baseAddress); 
-// });
-
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddHostedService<ProxyConfig>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddReverseProxy()
     .LoadFromMemory([], [])
@@ -29,25 +19,27 @@ builder.Services.AddPeFiMessaging(options => {
 
 var app = builder.Build();
 
-app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider  appSettingsConfigProvider ) => {
+app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider) => {
     var appSettingsConfig = appSettingsConfigProvider.GetConfig();
     var memoryConfig = memoryConfigProvider.GetConfig();
 
-    return new{
-        Routes =  appSettingsConfig.Routes.Concat(memoryConfig.Routes),
+    return new
+    {
+        Routes = appSettingsConfig.Routes.Concat(memoryConfig.Routes),
         Clusters = appSettingsConfig.Clusters.Concat(memoryConfig.Clusters),
     };
 }).WithName("Get Current Config")
 .WithOpenApi();
 
-app.UseBlazorFrameworkFiles();
+app.UseBlazorFrameworkFiles("/dashboard");
 app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseRouting();
-app.MapFallbackToFile("index.html");
 app.MapReverseProxy();
+
+app.MapFallbackToFile("/dashboard/{**path:nonfile}", "dashboard/index.html");
+app.MapFallbackToFile("/dashboard", "dashboard/index.html");
 app.Run();
 
 public partial class Program { }
-

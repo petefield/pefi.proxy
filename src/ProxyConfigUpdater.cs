@@ -13,7 +13,7 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Proxy Config Updater is listenting for new services.");
+        logger.LogInformation("Proxy Config Updater is listening for new services.");
 
         _topic = await messageBroker.CreateTopic("Events");
 

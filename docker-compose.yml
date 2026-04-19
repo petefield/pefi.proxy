@@ -1,6 +1,7 @@
 services:
   proxy:
     image: petefield/pefi.proxy:latest
+    pull_policy: always
     ports:
       - "5053:8080"
     env_file:

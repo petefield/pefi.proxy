@@ -4,28 +4,29 @@ A dynamic reverse proxy built with [.NET 9](https://dotnet.microsoft.com/) and [
 
 ## Features
 
-- **Dynamic routing** – Routes are updated automatically when services are registered or deregistered via the Service Manager API.
-- **Real-time configuration** – Listens to RabbitMQ events (`events.service.#`) and refreshes in-memory YARP configuration without downtime.
-- **Static routes** – Bootstrap routes can be defined in `appsettings.json` for services that are always present.
-- **Docker-ready** – Multi-stage Dockerfile included with secure secret handling for private NuGet feeds.
-- **OpenAPI/Swagger** – Built-in Swagger UI for exploring the proxy's own endpoints.
+- **Dynamic routing** -- Routes are updated automatically when services are registered or deregistered via the Service Manager API.
+- **Real-time configuration** -- Listens to RabbitMQ events (`events.service.#`) and refreshes in-memory YARP configuration without downtime.
+- **Static routes** -- Routes can be defined via environment variables or `appsettings.json` for services that are always present.
+- **Dashboard** -- Embedded Blazor WebAssembly UI at `/dashboard` for viewing active routes and cluster mappings.
+- **Docker-ready** -- Multi-stage Dockerfile included with secure secret handling for private NuGet feeds.
+- **OpenAPI/Swagger** -- Built-in Swagger UI for exploring the proxy's own endpoints.
 
 ## Architecture
 
 ```
 Incoming Request
-       │  (Host: <service-name>.pefi.co.uk)
-       ▼
+       |  (Host: <service-name>.pefi.co.uk)
+       v
 YARP Reverse Proxy
-       │
-       ├─ Static Routes  (appsettings.json)
-       └─ Dynamic Routes (in-memory, updated at runtime)
-                │
+       |
+       +-- Static Routes  (env vars / appsettings.json)
+       +-- Dynamic Routes (in-memory, updated at runtime)
+                |
        ProxyConfigUpdater (background service)
-                │
+                |
        RabbitMQ (events.service.#)
-                │
-       Service Manager API  ──► Destination Services
+                |
+       Service Manager API  --> Destination Services
                                 (http://host.docker.internal:<port>)
 ```
 
@@ -50,28 +51,37 @@ Configuration is loaded from `appsettings.json`, environment-specific overrides 
 
 | Setting | Environment Variable | Description |
 |---|---|---|
-| `ServiceManager:baseurl` | `ServiceManager__baseurl` | Base URL of the Service Manager API |
-| `Messaging:Address` | `Messaging__Address` | RabbitMQ broker hostname or IP |
-| `Messaging:Username` | `Messaging__Username` | RabbitMQ username |
-| `Messaging:Password` | `Messaging__Password` | RabbitMQ password |
+| `Messaging:address` | `Messaging__address` | RabbitMQ broker hostname or IP |
+| `Messaging:username` | `Messaging__username` | RabbitMQ username |
+| `Messaging:password` | `Messaging__password` | RabbitMQ password |
 
 ### Static Routes
 
-Static routes and clusters are defined in `appsettings.json` under the `ReverseProxy` key. They are merged with the dynamic routes at runtime.
+Static routes can be configured via environment variables (recommended for Docker) or in `appsettings.json`.
+
+**Via environment variables (`.env` file):**
+
+```bash
+ReverseProxy__Routes__my-service__ClusterId=my-service
+ReverseProxy__Routes__my-service__Match__Hosts__0=my-service.pefi.co.uk
+ReverseProxy__Clusters__my-service__Destinations__destination1__Address=http://host.docker.internal:7005
+```
+
+**Via `appsettings.json`:**
 
 ```json
 {
   "ReverseProxy": {
     "Routes": {
-      "my-static-service": {
-        "ClusterId": "my-static-cluster",
+      "my-service": {
+        "ClusterId": "my-service",
         "Match": {
-          "Hosts": ["my-static-service.pefi.co.uk"]
+          "Hosts": ["my-service.pefi.co.uk"]
         }
       }
     },
     "Clusters": {
-      "my-static-cluster": {
+      "my-service": {
         "Destinations": {
           "destination1": {
             "Address": "http://host.docker.internal:7005"
@@ -85,6 +95,26 @@ Static routes and clusters are defined in `appsettings.json` under the `ReverseP
 
 ## Getting Started
 
+### Running with Docker Compose
+
+The quickest way to run the proxy:
+
+```bash
+# Copy the example env file and edit as needed
+cp .env.example .env
+
+# Start the proxy
+docker compose up -d
+```
+
+This starts **pefi.proxy** on `http://localhost:5053` (dashboard at `/dashboard`, config API at `/config`, reverse proxy). RabbitMQ is expected to be running separately. Configure routes in the `.env` file.
+
+To stop:
+
+```bash
+docker compose down
+```
+
 ### Running locally
 
 ```bash
@@ -93,37 +123,15 @@ git clone https://github.com/petefield/pefi.proxy.git
 cd pefi.proxy
 
 # Set required environment variables (or configure in launchSettings.json)
-export ServiceManager__baseurl=http://localhost:5550
-export Messaging__Address=localhost
-export Messaging__Username=guest
-export Messaging__Password=guest
+export Messaging__address=localhost
+export Messaging__username=guest
+export Messaging__password=guest
 
 # Run the application
 dotnet run --project src/pefi.proxy.csproj
 ```
 
-The proxy will start on `http://localhost:5000` (or the port configured in `launchSettings.json`). A `/config` endpoint is available to inspect the merged route and cluster configuration.
-
-### Running with Docker Compose
-
-The quickest way to run the proxy:
-
-```bash
-# Set RabbitMQ connection (or use defaults in docker-compose.yml)
-export RABBITMQ_HOST=your-rabbitmq-host
-export RABBITMQ_USER=guest
-export RABBITMQ_PASS=guest
-
-docker compose up -d
-```
-
-This starts **pefi.proxy** on `http://localhost:8080` (dashboard, config API, reverse proxy). RabbitMQ is expected to be running separately.
-
-To stop:
-
-```bash
-docker compose down
-```
+The proxy will start on `http://localhost:5053` (or the port configured in `launchSettings.json`). The dashboard is available at `/dashboard` and the config API at `/config`.
 
 ### Running with Docker
 
@@ -133,11 +141,11 @@ docker build --secret id=github_token,env=GITHUB_TOKEN \
              -f src/Dockerfile -t pefi-proxy:latest .
 
 # Run the container
-docker run -p 8080:8080 \
-  -e "ServiceManager__baseurl=http://host.docker.internal:5550" \
-  -e "Messaging__Address=host.docker.internal" \
-  -e "Messaging__Username=guest" \
-  -e "Messaging__Password=guest" \
+docker run -p 5053:8080 \
+  -e "Messaging__address=host.docker.internal" \
+  -e "Messaging__username=guest" \
+  -e "Messaging__password=guest" \
+  --add-host=host.docker.internal:host-gateway \
   pefi-proxy:latest
 ```
 
@@ -145,6 +153,8 @@ docker run -p 8080:8080 \
 
 | Endpoint | Method | Description |
 |---|---|---|
+| `/dashboard` | GET | Blazor WASM dashboard for viewing routes |
+| `/dashboard/routes` | GET | Dashboard routes page |
 | `/config` | GET | Returns the current merged proxy configuration (routes + clusters) |
 | `/swagger` | GET | Swagger UI for exploring available endpoints |
 
@@ -159,9 +169,9 @@ dotnet test tests/pefi.proxy.tests/pefi.proxy.tests.csproj
 
 | Test class | What it covers |
 |---|---|
-| `MappersTests` | Unit tests for `Mappers.cs` – verifies that `ServiceDescription` objects are correctly converted to YARP `RouteConfig` and `ClusterConfig` instances, including null-safety for missing hostname or port. |
-| `ProxyConfigUpdaterTests` | Unit tests for `ProxyConfigUpdater` – verifies RabbitMQ topic creation, subscription to `events.service.#`, startup service loading, and in-memory config updates (filtering services with null hostname/port). |
-| `ConfigEndpointTests` | Integration tests using `WebApplicationFactory<Program>` – verifies that the `/config` endpoint returns HTTP 200 with a JSON body containing routes and clusters, and that static routes from `appsettings.json` are present. |
+| `MappersTests` | Unit tests for `Mappers.cs` -- verifies that service responses are correctly converted to YARP `RouteConfig` and `ClusterConfig` instances, including null-safety for missing hostname or port. |
+| `ProxyConfigUpdaterTests` | Unit tests for `ProxyConfigUpdater` -- verifies RabbitMQ topic creation, subscription to `events.service.#`, startup service loading, and in-memory config updates (filtering services with null hostname/port). |
+| `ConfigEndpointTests` | Integration tests using `WebApplicationFactory<Program>` -- verifies that the `/config` endpoint returns HTTP 200 with a JSON body containing routes and clusters, and that static routes from `appsettings.json` are present. |
 
 Dependencies used in tests: [xUnit](https://xunit.net/), [NSubstitute](https://nsubstitute.github.io/), and `Microsoft.AspNetCore.Mvc.Testing`.
 
@@ -169,20 +179,22 @@ Dependencies used in tests: [xUnit](https://xunit.net/), [NSubstitute](https://n
 
 ```
 pefi.proxy/
+├── Dashboard/
+│   ├── Layout/                          # Blazor layout and nav components
+│   ├── Pages/                           # Dashboard pages (Home, Routes)
+│   ├── wwwroot/                         # Static assets (CSS, icons)
+│   ├── Program.cs                       # Blazor WASM entry point
+│   └── Dashboard.csproj                 # Blazor WebAssembly project
 ├── src/
-│   ├── Models/
-│   │   └── ServiceDescription.cs        # Service domain model (MongoDB)
 │   ├── Services/
 │   │   ├── ServiceManager.cs            # Auto-generated Service Manager HTTP client
 │   │   └── service_mgr_openapi.json     # Service Manager OpenAPI specification
 │   ├── Program.cs                       # Application entry point and DI setup
 │   ├── ProxyConfigUpdater.cs            # Background service for real-time config updates
 │   ├── ServiceCollectionExtensions.cs   # Messaging DI extensions
-│   ├── Mappers.cs                       # Maps ServiceDescription → YARP route/cluster config
+│   ├── Mappers.cs                       # Maps service responses to YARP route/cluster config
 │   ├── GenerateHttpClientAttribute.cs   # Marker for the pefi.http source generator
-│   ├── ServiceCreatedMessage.cs         # RabbitMQ message record
 │   ├── appsettings.json                 # Default configuration and static routes
-│   ├── appsettings.Development.json     # Development logging overrides
 │   ├── Dockerfile                       # Multi-stage Docker build
 │   └── pefi.proxy.csproj               # Project file (.NET 9.0)
 ├── tests/
@@ -192,6 +204,8 @@ pefi.proxy/
 │       ├── ConfigEndpointTests.cs       # Integration tests for the /config endpoint
 │       ├── MockHttpMessageHandler.cs    # Fake HTTP handler used in tests
 │       └── pefi.proxy.tests.csproj     # Test project file (xUnit, NSubstitute)
+├── .env.example                         # Example environment configuration
+├── docker-compose.yml                   # Docker Compose for running the proxy
 └── LICENSE                              # GNU AGPLv3
 ```
 
@@ -202,7 +216,6 @@ pefi.proxy/
 | `Yarp.ReverseProxy` | Core reverse proxy framework |
 | `pefi.messaging.rabbit` | RabbitMQ messaging integration |
 | `pefi.http` | Source-generator-based HTTP client from OpenAPI specs |
-| `MongoDB.Driver` | MongoDB persistence |
 | `Swashbuckle.AspNetCore` | Swagger/OpenAPI UI |
 
 ## License

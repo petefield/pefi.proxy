@@ -139,22 +139,6 @@ code {
     content: "An error has occurred."
 }
 
-.content {
-    padding-top: 1.1rem;
-}
-
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid var(--accent-green);
-}
-
-.invalid {
-    outline: 1px solid #ef4444;
-}
-
-.validation-message {
-    color: #ef4444;
-}
-
 .alert-danger {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
