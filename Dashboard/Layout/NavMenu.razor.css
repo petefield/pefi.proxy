@@ -1,20 +1,59 @@
-.navbar-toggler {
-    background-color: rgba(56, 189, 248, 0.15);
-    border: 1px solid rgba(56, 189, 248, 0.2);
-}
-
-.top-row {
+.nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     min-height: 3.5rem;
+    padding: 0 1.25rem;
     background: rgba(0, 0, 0, 0.3);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.navbar-brand {
+.nav-brand {
     font-size: 1.1rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    color: var(--accent) !important;
+    color: var(--accent);
     font-family: var(--font-mono);
+    text-decoration: none;
+}
+
+.nav-brand:hover {
+    color: var(--accent);
+}
+
+.nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 0.375rem;
+    color: var(--accent);
+    padding: 0.4rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.nav-toggle:hover {
+    background: rgba(56, 189, 248, 0.2);
+}
+
+/* Mobile: hide when collapsed, show when expanded */
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.nav-menu.collapsed {
+    max-height: 0;
+    padding: 0;
+}
+
+.nav-menu.expanded {
+    max-height: 500px;
 }
 
 .bi {
@@ -38,7 +77,7 @@
 
 .nav-item {
     font-size: 0.9rem;
-    padding-bottom: 0.25rem;
+    padding: 0.25rem 1.25rem;
 }
 
     .nav-item:first-of-type {
@@ -52,13 +91,15 @@
     .nav-item ::deep a {
         color: var(--text-secondary);
         border-radius: 0.5rem;
-        height: 2.75rem;
+        height: 3rem;
         display: flex;
         align-items: center;
-        line-height: 2.75rem;
+        line-height: 3rem;
+        padding: 0 1rem;
         transition: all 0.2s ease;
         font-family: var(--font-mono);
         font-size: 0.85rem;
+        text-decoration: none;
     }
 
 .nav-item ::deep a.active {
@@ -72,16 +113,17 @@
     color: var(--text-primary);
 }
 
+/* Desktop: always show menu, hide toggle */
 @media (min-width: 641px) {
-    .navbar-toggler {
+    .nav-toggle {
         display: none;
     }
 
-    .collapse {
-        display: block;
-    }
-
-    .nav-scrollable {
+    .nav-menu,
+    .nav-menu.collapsed,
+    .nav-menu.expanded {
+        max-height: none;
+        padding: 0.5rem 0;
         height: calc(100vh - 3.5rem);
         overflow-y: auto;
     }
