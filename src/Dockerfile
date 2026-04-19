@@ -1,5 +1,3 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER app
 WORKDIR /app
@@ -9,12 +7,20 @@ FROM  --platform=$BUILDPLATFORM  mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 ARG TARGETARCH
 WORKDIR /src
-COPY ["pefi.proxy.csproj", "."]
+
+# Copy project files for restore
+COPY ["src/pefi.proxy.csproj", "src/"]
+COPY ["Dashboard/Dashboard.csproj", "Dashboard/"]
+
 RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN dotnet nuget add source --username petefield --password $GITHUB_TOKEN --store-password-in-clear-text --name petefield "https://nuget.pkg.github.com/petefield/index.json"
 
-RUN dotnet restore "pefi.proxy.csproj"
-COPY . .
-WORKDIR "/src"
+RUN dotnet restore "src/pefi.proxy.csproj"
+
+# Copy all source
+COPY src/ src/
+COPY Dashboard/ Dashboard/
+
+WORKDIR "/src/src"
 RUN dotnet build "pefi.proxy.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

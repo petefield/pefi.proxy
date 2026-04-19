@@ -104,12 +104,33 @@ dotnet run --project src/pefi.proxy.csproj
 
 The proxy will start on `http://localhost:5000` (or the port configured in `launchSettings.json`). A `/config` endpoint is available to inspect the merged route and cluster configuration.
 
+### Running with Docker Compose
+
+The quickest way to run the proxy:
+
+```bash
+# Set RabbitMQ connection (or use defaults in docker-compose.yml)
+export RABBITMQ_HOST=your-rabbitmq-host
+export RABBITMQ_USER=guest
+export RABBITMQ_PASS=guest
+
+docker compose up -d
+```
+
+This starts **pefi.proxy** on `http://localhost:8080` (dashboard, config API, reverse proxy). RabbitMQ is expected to be running separately.
+
+To stop:
+
+```bash
+docker compose down
+```
+
 ### Running with Docker
 
 ```bash
 # Build the image (requires a GitHub token for private NuGet packages)
 docker build --secret id=github_token,env=GITHUB_TOKEN \
-             -t pefi-proxy:latest src/
+             -f src/Dockerfile -t pefi-proxy:latest .
 
 # Run the container
 docker run -p 8080:8080 \
