@@ -1,0 +1,40 @@
+<div class="nav-header">
+    <a class="nav-brand" href="">PeFi Proxy</a>
+    <button title="Navigation menu" class="nav-toggle" @onclick="ToggleNavMenu">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+            @if (collapseNavMenu)
+            {
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+            }
+            else
+            {
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="6" y1="18" x2="18" y2="6" />
+            }
+        </svg>
+    </button>
+</div>
+
+<nav class="nav-menu @(collapseNavMenu ? "collapsed" : "expanded")">
+    <div class="nav-item">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="ToggleNavMenu">
+            <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+        </NavLink>
+    </div>
+    <div class="nav-item">
+        <NavLink class="nav-link" href="routes" @onclick="ToggleNavMenu">
+            <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Routes
+        </NavLink>
+    </div>
+</nav>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
