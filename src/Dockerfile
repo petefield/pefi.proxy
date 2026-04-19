@@ -7,18 +7,20 @@ EXPOSE 8080
 
 FROM  --platform=$BUILDPLATFORM  mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
+ARG TARGETARCH
 WORKDIR /src
-COPY ["src/pefi.proxy.csproj", "src/"]
+COPY ["pefi.proxy.csproj", "."]
 RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN dotnet nuget add source --username petefield --password $GITHUB_TOKEN --store-password-in-clear-text --name petefield "https://nuget.pkg.github.com/petefield/index.json"
 
-RUN dotnet restore "src/pefi.proxy.csproj"
-COPY src/ src/
-WORKDIR "/src/src"
+RUN dotnet restore "pefi.proxy.csproj"
+COPY . .
+WORKDIR "/src"
 RUN dotnet build "pefi.proxy.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "pefi.proxy.csproj" -a '$TARGETARCH'  -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+ARG TARGETARCH
+RUN dotnet publish "pefi.proxy.csproj" -a "$TARGETARCH" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
