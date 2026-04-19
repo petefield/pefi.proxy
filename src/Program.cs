@@ -40,10 +40,12 @@ app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfig
 }).WithName("Get Current Config")
 .WithOpenApi();
 
+app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseRouting();
+app.MapFallbackToFile("index.html");
 app.MapReverseProxy();
 app.Run();
 
