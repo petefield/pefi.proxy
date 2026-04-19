@@ -1,0 +1,93 @@
+@page "/routes"
+@inject HttpClient Http
+
+<PageTitle>Routes - PeFi Proxy</PageTitle>
+
+<h1>Proxy Routes</h1>
+
+@if (loading)
+{
+    <p><em>Loading configuration...</em></p>
+}
+else if (error is not null)
+{
+    <div class="alert alert-danger">Failed to load configuration: @error</div>
+}
+else if (config is not null)
+{
+    <div class="route-count">@config.Routes.Length routes active</div>
+
+    <div class="route-grid">
+        @foreach (var route in config.Routes)
+        {
+            var cluster = config.Clusters.FirstOrDefault(c => c.ClusterId == route.ClusterId);
+            <div class="route-card">
+                <div class="route-header">
+                    <span class="route-id">@route.RouteId</span>
+                    <span class="badge">@(route.ClusterId ?? "no cluster")</span>
+                </div>
+                @if (route.Match?.Hosts is not null)
+                {
+                    <div class="route-hosts">
+                        @foreach (var host in route.Match.Hosts)
+                        {
+                            <span class="host-tag">@host</span>
+                        }
+                    </div>
+                }
+                @if (route.Match?.Path is not null)
+                {
+                    <div class="route-path">
+                        <code>@route.Match.Path</code>
+                    </div>
+                }
+                @if (cluster?.Destinations is not null)
+                {
+                    <div class="route-destinations">
+                        <strong>Destinations:</strong>
+                        @foreach (var dest in cluster.Destinations)
+                        {
+                            <div class="destination">
+                                <span class="dest-key">@dest.Key</span>
+                                <span class="dest-address">@dest.Value.Address</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (!config.Routes.Any())
+    {
+        <p class="text-muted">No routes configured.</p>
+    }
+}
+
+@code {
+    private ProxyConfig? config;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            config = await Http.GetFromJsonAsync<ProxyConfig>("/config");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    public record ProxyConfig(RouteEntry[] Routes, ClusterEntry[] Clusters);
+    public record RouteEntry(string? RouteId, string? ClusterId, MatchEntry? Match);
+    public record MatchEntry(string[]? Hosts, string? Path);
+    public record ClusterEntry(string? ClusterId, Dictionary<string, DestinationEntry>? Destinations);
+    public record DestinationEntry(string? Address);
+}
