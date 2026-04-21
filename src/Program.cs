@@ -5,6 +5,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Logging.AddConsole();
 
+var tlsCertificateSelector = TlsCertificateSelector.FromConfiguration(builder.Configuration.GetSection("Tls"));
+if (tlsCertificateSelector.HasCertificates)
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ConfigureHttpsDefaults(httpsOptions =>
+        {
+            httpsOptions.ServerCertificateSelector = (_, serverName) => tlsCertificateSelector.Select(serverName);
+        });
+    });
+}
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddReverseProxy()
@@ -18,6 +30,8 @@ builder.Services.AddPeFiMessaging(options => {
 });
 
 var app = builder.Build();
+if (tlsCertificateSelector.HasCertificates)
+    app.Lifetime.ApplicationStopping.Register(tlsCertificateSelector.Dispose);
 
 app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider) => {
     var appSettingsConfig = appSettingsConfigProvider.GetConfig();
