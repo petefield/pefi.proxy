@@ -132,11 +132,14 @@ public sealed class TlsCertificateSelector
         if (!extension.Equals(".pem", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException($"Unsupported TLS certificate file extension '{extension}' for '{certificatePath}'. Supported extensions are .pfx, .p12, and .pem.");
 
-        var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
-        Console.WriteLine($"effectiveKeyPath: {effectiveKeyPath}");
-        return string.IsNullOrWhiteSpace(password)
-            ? X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath)
-            : X509Certificate2.CreateFromEncryptedPemFile(certificatePath, password, effectiveKeyPath);
+      //  var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
+
+        string certPem = File.ReadAllText(certificatePath);
+        return X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem);
+        
+      //  return string.IsNullOrWhiteSpace(password)
+      //      ? X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath)
+     //       : X509Certificate2.CreateFromEncryptedPemFile(certificatePath, password, effectiveKeyPath);
     }
 
     private static string ResolvePemKeyPath(string certificatePath, string? keyPath)
