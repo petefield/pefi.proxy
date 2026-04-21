@@ -102,6 +102,47 @@ public class TlsCertificateSelectorTests
         }
     }
 
+    [Fact]
+    public void FromConfiguration_WithCertificateDirectorySubdirectories_LoadsCertificatesByDnsName()
+    {
+        const string password = "test-password";
+        var certificateDirectory = Path.Combine(Path.GetTempPath(), $"tls-nested-tests-{Guid.NewGuid():N}");
+        var nestedDirectory = Path.Combine(certificateDirectory, "nested");
+        Directory.CreateDirectory(nestedDirectory);
+
+        var firstCertificatePath = Path.Combine(certificateDirectory, "pub.pfx");
+        var secondCertificatePath = Path.Combine(nestedDirectory, "tour.pfx");
+
+        CreateCertificateFile("pub.the-fields.net", password, firstCertificatePath);
+        CreateCertificateFile("tour.pefi.co.uk", password, secondCertificatePath);
+
+        try
+        {
+            using var firstCertificate = new X509Certificate2(firstCertificatePath, password);
+            using var secondCertificate = new X509Certificate2(secondCertificatePath, password);
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Tls:Directory"] = certificateDirectory,
+                    ["Tls:DirectoryPassword"] = password,
+                })
+                .Build();
+
+            var selector = TlsCertificateSelector.FromConfiguration(configuration.GetSection("Tls"));
+
+            Assert.True(selector.HasCertificates);
+            Assert.Equal(firstCertificate.Thumbprint, selector.Select("pub.the-fields.net")?.Thumbprint);
+            Assert.Equal(secondCertificate.Thumbprint, selector.Select("tour.pefi.co.uk")?.Thumbprint);
+        }
+        finally
+        {
+            TryDelete(firstCertificatePath);
+            TryDelete(secondCertificatePath);
+            TryDeleteDirectory(certificateDirectory);
+        }
+    }
+
  //   [Fact]
     public void FromConfiguration_WithPemCertificate_LoadsCertificateForConfiguredHost()
     {

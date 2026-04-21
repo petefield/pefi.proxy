@@ -83,7 +83,7 @@ public sealed class TlsCertificateSelector
             Console.WriteLine($"Certificate Directory Path {certificateDirectoryPath} - exists");
 
             var directoryPassword = tlsSection.GetValue<string>("DirectoryPassword");
-            var certificatePaths = Directory.EnumerateFiles(certificateDirectoryPath, "*", SearchOption.TopDirectoryOnly)
+            var certificatePaths = Directory.EnumerateFiles(certificateDirectoryPath, "*", SearchOption.AllDirectories)
                 .Where(path =>
                 {
                     var extension = Path.GetExtension(path);
