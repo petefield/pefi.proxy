@@ -1,6 +1,6 @@
 using pefi;
-using Yarp.ReverseProxy.Configuration;
 using PeFi.Proxy;
+using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -9,6 +9,10 @@ builder.Logging.AddConsole();
 var tlsCertificateSelector = TlsCertificateSelector.FromConfiguration(builder.Configuration.GetSection("Tls"));
 if (tlsCertificateSelector.HasCertificates)
 {
+    var httpsPort = builder.Configuration.GetValue<int?>("HTTPS_PORT")
+        ?? builder.Configuration.GetValue<int?>("Tls:Port")
+        ?? 8443;
+
     builder.WebHost.ConfigureKestrel(options =>
     {
         options.ConfigureHttpsDefaults(httpsOptions =>
@@ -18,6 +22,8 @@ if (tlsCertificateSelector.HasCertificates)
                 return tlsCertificateSelector.Select(serverName);
             };
         });
+
+        options.ListenAnyIP(httpsPort, listenOptions => listenOptions.UseHttps());
     });
 }
 
