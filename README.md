@@ -60,6 +60,8 @@ Configuration is loaded from `appsettings.json`, environment-specific overrides 
 
 The proxy can terminate TLS for multiple hostnames by loading one or more certificates and selecting the right certificate using SNI. Forwarding to upstream destinations remains unchanged (typically `http://...` cluster addresses).
 
+You can either configure certificates explicitly, or point to a directory and let the proxy load all `.pfx`/`.p12` files from it.
+
 ```bash
 Tls__Certificates__0__Path=/certs/pub.the-fields.net.pfx
 Tls__Certificates__0__Password=changeit
@@ -72,6 +74,15 @@ Tls__Certificates__1__Hosts__0=tour.pefi.co.uk
 
 The first configured certificate is used as the default when SNI is not provided or no host-specific match is found.
 Keep certificate passwords out of source control (for example via environment variables, Docker/Kubernetes secrets, or another secret manager).
+
+**Directory-based loading:**
+
+```bash
+Tls__Directory=/certs
+Tls__DirectoryPassword=changeit
+```
+
+When using `Tls:Directory`, hostnames are inferred from each certificate (DNS name / SAN entries), and the first loaded certificate is used as the default fallback.
 
 ### Static Routes
 

@@ -1,4 +1,5 @@
 using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 
 namespace PeFi.Proxy;
@@ -72,10 +73,63 @@ public sealed class TlsCertificateSelector
             }
         }
 
+        var certificateDirectoryPath = tlsSection.GetValue<string>("Directory");
+        if (!string.IsNullOrWhiteSpace(certificateDirectoryPath) && Directory.Exists(certificateDirectoryPath))
+        {
+            var directoryPassword = tlsSection.GetValue<string>("DirectoryPassword");
+            var certificatePaths = Directory.EnumerateFiles(certificateDirectoryPath, "*.pfx", SearchOption.TopDirectoryOnly)
+                .Concat(Directory.EnumerateFiles(certificateDirectoryPath, "*.p12", SearchOption.TopDirectoryOnly))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var certificatePath in certificatePaths)
+            {
+                X509Certificate2 certificate;
+                try
+                {
+                    certificate = new X509Certificate2(certificatePath, directoryPassword);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Unable to load TLS certificate from directory path '{certificatePath}'.",
+                        ex);
+                }
+
+                loadedCertificates.Add(certificate);
+                defaultCertificate ??= certificate;
+
+                foreach (var host in GetCertificateHosts(certificate))
+                    hostCertificates[NormalizeHost(host)] = certificate;
+            }
+        }
+
         return new TlsCertificateSelector(hostCertificates, defaultCertificate, loadedCertificates);
     }
 
     private static string NormalizeHost(string host) => host.Trim().TrimEnd('.').ToLowerInvariant();
+
+    private static IEnumerable<string> GetCertificateHosts(X509Certificate2 certificate)
+    {
+        var hosts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        var dnsName = certificate.GetNameInfo(X509NameType.DnsName, false);
+        if (!string.IsNullOrWhiteSpace(dnsName))
+            hosts.Add(dnsName);
+
+        var subjectAlternativeName = certificate.Extensions["2.5.29.17"];
+        if (subjectAlternativeName is null)
+            return hosts;
+
+        var matches = Regex.Matches(subjectAlternativeName.Format(true), @"DNS Name=(?<host>[^\r\n,]+)");
+        foreach (Match match in matches)
+        {
+            var host = match.Groups["host"].Value.Trim();
+            if (!string.IsNullOrWhiteSpace(host))
+                hosts.Add(host);
+        }
+
+        return hosts;
+    }
 
     public void Dispose()
     {

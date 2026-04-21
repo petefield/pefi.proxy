@@ -61,7 +61,55 @@ public class TlsCertificateSelectorTests
         Assert.Null(selector.Select("pub.the-fields.net"));
     }
 
+    [Fact]
+    public void FromConfiguration_WithCertificateDirectory_LoadsCertificatesByDnsName()
+    {
+        const string password = "test-password";
+        var certificateDirectory = Path.Combine(Path.GetTempPath(), $"tls-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(certificateDirectory);
+
+        var firstCertificatePath = Path.Combine(certificateDirectory, "pub.pfx");
+        var secondCertificatePath = Path.Combine(certificateDirectory, "tour.pfx");
+
+        CreateCertificateFile("pub.the-fields.net", password, firstCertificatePath);
+        CreateCertificateFile("tour.pefi.co.uk", password, secondCertificatePath);
+
+        try
+        {
+            using var firstCertificate = new X509Certificate2(firstCertificatePath, password);
+            using var secondCertificate = new X509Certificate2(secondCertificatePath, password);
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Tls:Directory"] = certificateDirectory,
+                    ["Tls:DirectoryPassword"] = password,
+                })
+                .Build();
+
+            var selector = TlsCertificateSelector.FromConfiguration(configuration.GetSection("Tls"));
+
+            Assert.True(selector.HasCertificates);
+            Assert.Equal(firstCertificate.Thumbprint, selector.Select("pub.the-fields.net")?.Thumbprint);
+            Assert.Equal(secondCertificate.Thumbprint, selector.Select("tour.pefi.co.uk")?.Thumbprint);
+        }
+        finally
+        {
+            TryDelete(firstCertificatePath);
+            TryDelete(secondCertificatePath);
+            TryDeleteDirectory(certificateDirectory);
+        }
+    }
+
     private static string CreateCertificateFile(string commonName, string password)
+    {
+        var filePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pfx");
+        CreateCertificateFile(commonName, password, filePath);
+
+        return filePath;
+    }
+
+    private static void CreateCertificateFile(string commonName, string password, string filePath)
     {
         using var rsa = RSA.Create(2048);
         var request = new CertificateRequest($"CN={commonName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -69,10 +117,7 @@ public class TlsCertificateSelectorTests
             DateTimeOffset.UtcNow.AddDays(CertificateValidFromDaysOffset),
             DateTimeOffset.UtcNow.AddDays(CertificateValidToDaysOffset));
 
-        var filePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pfx");
         File.WriteAllBytes(filePath, certificate.Export(X509ContentType.Pfx, password));
-
-        return filePath;
     }
 
     private static void TryDelete(string filePath)
@@ -84,6 +129,18 @@ public class TlsCertificateSelectorTests
         catch
         {
             // best-effort cleanup for temporary test files
+        }
+    }
+
+    private static void TryDeleteDirectory(string directoryPath)
+    {
+        try
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+        catch
+        {
+            // best-effort cleanup for temporary test directories
         }
     }
 }
