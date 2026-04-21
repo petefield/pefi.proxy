@@ -7,6 +7,9 @@ namespace PeFi.Proxy;
 public sealed class TlsCertificateSelector
     : IDisposable
 {
+    private const string SubjectAlternativeNameOid = "2.5.29.17";
+    private static readonly Regex DnsNameRegex = new(@"DNS Name=(?<host>[^\r\n,]+)", RegexOptions.Compiled);
+
     private readonly IReadOnlyDictionary<string, X509Certificate2> _hostCertificates;
     private readonly X509Certificate2? _defaultCertificate;
     private readonly IReadOnlyCollection<X509Certificate2> _loadedCertificates;
@@ -77,8 +80,13 @@ public sealed class TlsCertificateSelector
         if (!string.IsNullOrWhiteSpace(certificateDirectoryPath) && Directory.Exists(certificateDirectoryPath))
         {
             var directoryPassword = tlsSection.GetValue<string>("DirectoryPassword");
-            var certificatePaths = Directory.EnumerateFiles(certificateDirectoryPath, "*.pfx", SearchOption.TopDirectoryOnly)
-                .Concat(Directory.EnumerateFiles(certificateDirectoryPath, "*.p12", SearchOption.TopDirectoryOnly))
+            var certificatePaths = Directory.EnumerateFiles(certificateDirectoryPath, "*", SearchOption.TopDirectoryOnly)
+                .Where(path =>
+                {
+                    var extension = Path.GetExtension(path);
+                    return extension.Equals(".pfx", StringComparison.OrdinalIgnoreCase)
+                        || extension.Equals(".p12", StringComparison.OrdinalIgnoreCase);
+                })
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
             foreach (var certificatePath in certificatePaths)
@@ -116,11 +124,22 @@ public sealed class TlsCertificateSelector
         if (!string.IsNullOrWhiteSpace(dnsName))
             hosts.Add(dnsName);
 
-        var subjectAlternativeName = certificate.Extensions["2.5.29.17"];
+        var subjectAlternativeName = certificate.Extensions[SubjectAlternativeNameOid];
         if (subjectAlternativeName is null)
             return hosts;
 
-        var matches = Regex.Matches(subjectAlternativeName.Format(true), @"DNS Name=(?<host>[^\r\n,]+)");
+        if (subjectAlternativeName is X509SubjectAlternativeNameExtension typedSubjectAlternativeName)
+        {
+            foreach (var host in typedSubjectAlternativeName.EnumerateDnsNames())
+            {
+                if (!string.IsNullOrWhiteSpace(host))
+                    hosts.Add(host);
+            }
+
+            return hosts;
+        }
+
+        var matches = DnsNameRegex.Matches(subjectAlternativeName.Format(true));
         foreach (Match match in matches)
         {
             var host = match.Groups["host"].Value.Trim();
