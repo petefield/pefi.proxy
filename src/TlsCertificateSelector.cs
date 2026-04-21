@@ -130,7 +130,6 @@ public sealed class TlsCertificateSelector
 {
     var fileName = Path.GetFileName(certificatePath);
     var directory = Path.GetDirectoryName(certificatePath);
-    Console.WriteLine($"LoadCertificate {directory} {fileName} with extension {extension}");
     X509Certificate2 certificate;
 
     if(fileName.Equals("fullchain.pem", StringComparison.OrdinalIgnoreCase))
