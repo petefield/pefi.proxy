@@ -133,6 +133,7 @@ public sealed class TlsCertificateSelector
             throw new InvalidOperationException($"Unsupported TLS certificate file extension '{extension}' for '{certificatePath}'. Supported extensions are .pfx, .p12, and .pem.");
 
         var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
+        Console.WriteLine($"effectiveKeyPath: {effectiveKeyPath}");
         return string.IsNullOrWhiteSpace(password)
             ? X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath)
             : X509Certificate2.CreateFromEncryptedPemFile(certificatePath, password, effectiveKeyPath);
