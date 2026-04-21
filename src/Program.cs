@@ -12,7 +12,10 @@ if (tlsCertificateSelector.HasCertificates)
     {
         options.ConfigureHttpsDefaults(httpsOptions =>
         {
-            httpsOptions.ServerCertificateSelector = (_, serverName) => tlsCertificateSelector.Select(serverName);
+            httpsOptions.ServerCertificateSelector = (_, serverName) =>{
+                Console.WriteLine($"Servername : {serverName}");
+                tlsCertificateSelector.Select(serverName);
+            };
         });
     });
 }
