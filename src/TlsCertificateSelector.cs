@@ -77,8 +77,11 @@ public sealed class TlsCertificateSelector
         }
 
         var certificateDirectoryPath = tlsSection.GetValue<string>("Directory");
+        Console.WriteLine($"Certificate Directory Path {certificateDirectoryPath}");
         if (!string.IsNullOrWhiteSpace(certificateDirectoryPath) && Directory.Exists(certificateDirectoryPath))
         {
+            Console.WriteLine($"Certificate Directory Path {certificateDirectoryPath} - exists");
+
             var directoryPassword = tlsSection.GetValue<string>("DirectoryPassword");
             var certificatePaths = Directory.EnumerateFiles(certificateDirectoryPath, "*", SearchOption.TopDirectoryOnly)
                 .Where(path =>
@@ -92,6 +95,8 @@ public sealed class TlsCertificateSelector
 
             foreach (var certificatePath in certificatePaths)
             {
+               Console.WriteLine($" loading  {certificatePath}");
+
                 X509Certificate2 certificate;
                 try
                 {
