@@ -109,6 +109,12 @@ public sealed class TlsCertificateSelector
                         ex);
                 }
 
+                if(certificate is null)
+                {
+                    Console.WriteLine($" skipped  {certificatePath}");
+                    continue;
+                }
+
                 loadedCertificates.Add(certificate);
                 defaultCertificate ??= certificate;
 
@@ -120,39 +126,31 @@ public sealed class TlsCertificateSelector
         return new TlsCertificateSelector(hostCertificates, defaultCertificate, loadedCertificates);
     }
 
-   private static X509Certificate2 LoadCertificate(string certificatePath, string? password, string? keyPath = null)
+   private static X509Certificate2? LoadCertificate(string certificatePath, string? password, string? keyPath = null)
 {
-    var extension = Path.GetExtension(certificatePath);
+    var fileName = Path.GetFileName(certificatePath);
+    var directory = Path.GetDirectoryName(certificatePath);
+    Console.WriteLine($"LoadCertificate {directory} {fileName} with extension {extension}");
     X509Certificate2 certificate;
 
-    if (extension.Equals(".pfx", StringComparison.OrdinalIgnoreCase)
-        || extension.Equals(".p12", StringComparison.OrdinalIgnoreCase))
+    if(fileName.Equals("fullchain.pem", StringComparison.OrdinalIgnoreCase))
     {
-        certificate = new X509Certificate2(certificatePath, password);
-    }
-    else if (extension.Equals(".pem", StringComparison.OrdinalIgnoreCase))
-    {
-        var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
+        var effectiveKeyPath = Path.Combine(directory, "privkey.pem");
+        certificate = X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath);
 
-        certificate = string.IsNullOrWhiteSpace(password)
-            ? X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath)
-            : X509Certificate2.CreateFromEncryptedPemFile(certificatePath, password, effectiveKeyPath);
-    }
-    else
-    {
-        throw new InvalidOperationException(
-            $"Unsupported TLS certificate file extension '{extension}' for '{certificatePath}'. Supported extensions are .pfx, .p12, and .pem.");
+        if (!certificate.HasPrivateKey)
+        {
+            certificate.Dispose();
+            throw new InvalidOperationException(
+                $"TLS certificate '{certificatePath}' was loaded without a private key. " +
+                "For PEM certificates, configure the matching key file via Tls:Certificates:*:KeyPath or place a matching .key file alongside the .pem file.");
+        }
+
+        return certificate;
     }
 
-    if (!certificate.HasPrivateKey)
-    {
-        certificate.Dispose();
-        throw new InvalidOperationException(
-            $"TLS certificate '{certificatePath}' was loaded without a private key. " +
-            "For PEM certificates, configure the matching key file via Tls:Certificates:*:KeyPath or place a matching .key file alongside the .pem file.");
-    }
+    return null;
 
-    return certificate;
 }
 
     private static string ResolvePemKeyPath(string certificatePath, string? keyPath)
