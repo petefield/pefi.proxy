@@ -30,6 +30,8 @@ builder.Services.AddPeFiMessaging(options => {
 });
 
 var app = builder.Build();
+if (tlsCertificateSelector.HasCertificates)
+    app.Lifetime.ApplicationStopping.Register(tlsCertificateSelector.Dispose);
 
 app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider) => {
     var appSettingsConfig = appSettingsConfigProvider.GetConfig();

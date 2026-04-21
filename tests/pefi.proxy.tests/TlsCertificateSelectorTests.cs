@@ -8,6 +8,9 @@ namespace PeFi.Proxy.Tests;
 
 public class TlsCertificateSelectorTests
 {
+    private const int CertificateValidFromDaysOffset = -1;
+    private const int CertificateValidToDaysOffset = 1;
+
     [Fact]
     public void FromConfiguration_WithMultipleCertificates_SelectsByHostAndFallsBackToDefault()
     {
@@ -42,8 +45,8 @@ public class TlsCertificateSelectorTests
         }
         finally
         {
-            File.Delete(firstCertificatePath);
-            File.Delete(secondCertificatePath);
+            TryDelete(firstCertificatePath);
+            TryDelete(secondCertificatePath);
         }
     }
 
@@ -62,11 +65,25 @@ public class TlsCertificateSelectorTests
     {
         using var rsa = RSA.Create(2048);
         var request = new CertificateRequest($"CN={commonName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+        using var certificate = request.CreateSelfSigned(
+            DateTimeOffset.UtcNow.AddDays(CertificateValidFromDaysOffset),
+            DateTimeOffset.UtcNow.AddDays(CertificateValidToDaysOffset));
 
         var filePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pfx");
         File.WriteAllBytes(filePath, certificate.Export(X509ContentType.Pfx, password));
 
         return filePath;
+    }
+
+    private static void TryDelete(string filePath)
+    {
+        try
+        {
+            File.Delete(filePath);
+        }
+        catch
+        {
+            // best-effort cleanup for temporary test files
+        }
     }
 }

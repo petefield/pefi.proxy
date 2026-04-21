@@ -71,6 +71,7 @@ Tls__Certificates__1__Hosts__0=tour.pefi.co.uk
 ```
 
 The first configured certificate is used as the default when SNI is not provided or no host-specific match is found.
+Keep certificate passwords out of source control (for example via environment variables, Docker/Kubernetes secrets, or another secret manager).
 
 ### Static Routes
 
