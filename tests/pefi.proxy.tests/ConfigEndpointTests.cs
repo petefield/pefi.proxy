@@ -95,6 +95,45 @@ public class ConfigEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
     }
 
+    [Fact]
+    public async Task CreateRoute_AddsRouteAndClusterToConfig()
+    {
+        var client = _factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync("/routes", new
+        {
+            routeId = "new-route",
+            host = "new-route.pefi.co.uk",
+            destinationAddress = "http://host.docker.internal:7070",
+            path = "/api/{**catch-all}"
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var configResponse = await client.GetAsync("/config");
+        configResponse.EnsureSuccessStatusCode();
+        var body = await configResponse.Content.ReadFromJsonAsync<ConfigResponse>();
+
+        Assert.NotNull(body);
+        Assert.Contains(body.routes, r => r.routeId == "new-route" && r.clusterId == "new-route");
+        Assert.Contains(body.clusters, c => c.clusterId == "new-route");
+    }
+
+    [Fact]
+    public async Task CreateRoute_WithExistingRouteId_ReturnsConflict()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/routes", new
+        {
+            routeId = "immich",
+            host = "duplicate.pefi.co.uk",
+            destinationAddress = "http://host.docker.internal:6060"
+        });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
     // Simple response model for deserialization
     private record ConfigResponse(
         RouteEntry[] routes,

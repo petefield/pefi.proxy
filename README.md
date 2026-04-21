@@ -8,6 +8,7 @@ A dynamic reverse proxy built with [.NET 9](https://dotnet.microsoft.com/) and [
 - **Real-time configuration** -- Listens to RabbitMQ events (`events.service.#`) and refreshes in-memory YARP configuration without downtime.
 - **Static routes** -- Routes can be defined via environment variables or `appsettings.json` for services that are always present.
 - **Dashboard** -- Embedded Blazor WebAssembly UI at `/dashboard` for viewing active routes and cluster mappings.
+- **Dashboard route creation** -- Add in-memory proxy routes directly from the dashboard routes page.
 - **Docker-ready** -- Multi-stage Dockerfile included with secure secret handling for private NuGet feeds.
 - **OpenAPI/Swagger** -- Built-in Swagger UI for exploring the proxy's own endpoints.
 
@@ -156,6 +157,7 @@ docker run -p 5053:8080 \
 | `/dashboard` | GET | Blazor WASM dashboard for viewing routes |
 | `/dashboard/routes` | GET | Dashboard routes page |
 | `/config` | GET | Returns the current merged proxy configuration (routes + clusters) |
+| `/routes` | POST | Adds an in-memory proxy route + cluster (used by dashboard UI) |
 | `/swagger` | GET | Swagger UI for exploring available endpoints |
 
 ## Testing
