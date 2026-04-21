@@ -22,8 +22,11 @@ builder.WebHost.ConfigureKestrel(options =>
     {
         options.ConfigureHttpsDefaults(httpsOptions =>
         {
-            httpsOptions.ServerCertificateSelector = (_, serverName) =>
-                tlsCertificateSelector.Select(serverName);
+            Console.WriteLine("TLS certificates loaded. HTTPS will be enabled.");
+            httpsOptions.ServerCertificateSelector = (_, serverName) =>{
+                Console.WriteLine($"TLS certificates Select : {serverName}.");
+                return tlsCertificateSelector.Select(serverName);
+            };
         });
 
         options.ListenAnyIP(httpsPort, listenOptions => listenOptions.UseHttps());
