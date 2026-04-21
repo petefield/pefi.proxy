@@ -134,7 +134,7 @@ public sealed class TlsCertificateSelector
 
       //  var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
 
-        car certPem = File.ReadAllText(certificatePath);
+        var certPem = File.ReadAllText(certificatePath);
         return X509Certificate2.CreateFromPem(certPem);
         
       //  return string.IsNullOrWhiteSpace(password)
