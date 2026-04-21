@@ -5,30 +5,39 @@
 
 <h1>Proxy Routes</h1>
 
-<div class="route-form-card">
-    <h3>Add Route</h3>
-    <EditForm Model="createRouteForm" OnValidSubmit="CreateRouteAsync">
-        <div class="route-form-grid">
-            <InputText class="form-control" @bind-Value="createRouteForm.RouteId" placeholder="Route ID (required)" />
-            <InputText class="form-control" @bind-Value="createRouteForm.ClusterId" placeholder="Cluster ID (optional, defaults to Route ID)" />
-            <InputText class="form-control" @bind-Value="createRouteForm.Host" placeholder="Host (required, e.g. api.pefi.co.uk)" />
-            <InputText class="form-control" @bind-Value="createRouteForm.DestinationAddress" placeholder="Destination URL (required, e.g. http://host.docker.internal:8080)" />
-            <InputText class="form-control" @bind-Value="createRouteForm.Path" placeholder="Path (optional, e.g. /api/{**catch-all})" />
-        </div>
-        <button class="btn btn-primary mt-3" disabled="@submitting">
-            @(submitting ? "Adding..." : "Add Route")
-        </button>
-    </EditForm>
-
-    @if (createError is not null)
-    {
-        <div class="alert alert-danger mt-3">@createError</div>
-    }
-    @if (createSuccess is not null)
-    {
-        <div class="alert alert-success mt-3">@createSuccess</div>
-    }
+<div class="route-toolbar">
+    <button class="route-toolbar-button" @onclick="ShowCreateRouteForm">
+        Add Route
+    </button>
 </div>
+
+@if (showCreateRouteForm)
+{
+    <div class="route-form-card">
+        <h3>Add Route</h3>
+        <EditForm Model="createRouteForm" OnValidSubmit="CreateRouteAsync">
+            <div class="route-form-grid">
+                <InputText class="form-control" @bind-Value="createRouteForm.RouteId" placeholder="Route ID (required)" />
+                <InputText class="form-control" @bind-Value="createRouteForm.ClusterId" placeholder="Cluster ID (optional, defaults to Route ID)" />
+                <InputText class="form-control" @bind-Value="createRouteForm.Host" placeholder="Host (required, e.g. api.pefi.co.uk)" />
+                <InputText class="form-control" @bind-Value="createRouteForm.DestinationAddress" placeholder="Destination URL (required, e.g. http://host.docker.internal:8080)" />
+                <InputText class="form-control" @bind-Value="createRouteForm.Path" placeholder="Path (optional, e.g. /api/{**catch-all})" />
+            </div>
+            <button class="route-submit-button" disabled="@submitting">
+                @(submitting ? "Adding..." : "Add Route")
+            </button>
+        </EditForm>
+
+        @if (createError is not null)
+        {
+            <div class="alert alert-danger mt-3">@createError</div>
+        }
+        @if (createSuccess is not null)
+        {
+            <div class="alert alert-success mt-3">@createSuccess</div>
+        }
+    </div>
+}
 
 @if (loading)
 {
@@ -92,6 +101,7 @@ else if (config is not null)
 @code {
     private ProxyConfig? config;
     private CreateRouteForm createRouteForm = new();
+    private bool showCreateRouteForm;
     private bool loading = true;
     private bool submitting;
     private string? error;
@@ -100,6 +110,9 @@ else if (config is not null)
 
     protected override async Task OnInitializedAsync()
         => await LoadConfigAsync();
+
+    private void ShowCreateRouteForm()
+        => showCreateRouteForm = true;
 
     private async Task LoadConfigAsync()
     {
