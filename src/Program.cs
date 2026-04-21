@@ -134,3 +134,38 @@ public record CreateRouteRequest(string? RouteId, string? ClusterId, string? Hos
 public record CreateRouteResponse(string RouteId, string ClusterId, string Host, string DestinationAddress, string? Path);
 
 public partial class Program { }
+
+private static X509Certificate2 LoadCertificate(string certificatePath, string? password, string? keyPath = null)
+{
+    var extension = Path.GetExtension(certificatePath);
+    X509Certificate2 certificate;
+
+    if (extension.Equals(".pfx", StringComparison.OrdinalIgnoreCase)
+        || extension.Equals(".p12", StringComparison.OrdinalIgnoreCase))
+    {
+        certificate = new X509Certificate2(certificatePath, password);
+    }
+    else if (extension.Equals(".pem", StringComparison.OrdinalIgnoreCase))
+    {
+        var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
+
+        certificate = string.IsNullOrWhiteSpace(password)
+            ? X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath)
+            : X509Certificate2.CreateFromEncryptedPemFile(certificatePath, password, effectiveKeyPath);
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            $"Unsupported TLS certificate file extension '{extension}' for '{certificatePath}'. Supported extensions are .pfx, .p12, and .pem.");
+    }
+
+    if (!certificate.HasPrivateKey)
+    {
+        certificate.Dispose();
+        throw new InvalidOperationException(
+            $"TLS certificate '{certificatePath}' was loaded without a private key. " +
+            "For PEM certificates, configure the matching key file via Tls:Certificates:*:KeyPath or place a matching .key file alongside the .pem file.");
+    }
+
+    return certificate;
+}
