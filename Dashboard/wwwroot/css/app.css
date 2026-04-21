@@ -160,6 +160,38 @@ code {
 }
 
 /* Add route form */
+.route-toolbar {
+    margin-bottom: 1rem;
+}
+
+.route-toolbar-button,
+.route-submit-button {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.55rem 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.route-toolbar-button:hover,
+.route-submit-button:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: var(--accent);
+}
+
+.route-toolbar-button:disabled,
+.route-submit-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.route-submit-button {
+    margin-top: 0.75rem;
+}
+
 .route-form-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
