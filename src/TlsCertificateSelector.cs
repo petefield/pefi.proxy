@@ -55,7 +55,7 @@ public sealed class TlsCertificateSelector
             X509Certificate2 certificate;
             try
             {
-                certificate = new X509Certificate2(certificateConfig.Path, certificateConfig.Password);
+                certificate = LoadCertificate(certificateConfig.Path, certificateConfig.Password, certificateConfig.KeyPath);
             }
             catch (Exception ex)
             {
@@ -85,7 +85,8 @@ public sealed class TlsCertificateSelector
                 {
                     var extension = Path.GetExtension(path);
                     return extension.Equals(".pfx", StringComparison.OrdinalIgnoreCase)
-                        || extension.Equals(".p12", StringComparison.OrdinalIgnoreCase);
+                        || extension.Equals(".p12", StringComparison.OrdinalIgnoreCase)
+                        || extension.Equals(".pem", StringComparison.OrdinalIgnoreCase);
                 })
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
@@ -94,7 +95,7 @@ public sealed class TlsCertificateSelector
                 X509Certificate2 certificate;
                 try
                 {
-                    certificate = new X509Certificate2(certificatePath, directoryPassword);
+                    certificate = LoadCertificate(certificatePath, directoryPassword);
                 }
                 catch (Exception ex)
                 {
@@ -112,6 +113,33 @@ public sealed class TlsCertificateSelector
         }
 
         return new TlsCertificateSelector(hostCertificates, defaultCertificate, loadedCertificates);
+    }
+
+    private static X509Certificate2 LoadCertificate(string certificatePath, string? password, string? keyPath = null)
+    {
+        var extension = Path.GetExtension(certificatePath);
+        if (extension.Equals(".pfx", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".p12", StringComparison.OrdinalIgnoreCase))
+        {
+            return new X509Certificate2(certificatePath, password);
+        }
+
+        if (!extension.Equals(".pem", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Unsupported TLS certificate file extension '{extension}' for '{certificatePath}'.");
+
+        var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
+        return string.IsNullOrWhiteSpace(password)
+            ? X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath)
+            : X509Certificate2.CreateFromEncryptedPemFile(certificatePath, password, effectiveKeyPath);
+    }
+
+    private static string ResolvePemKeyPath(string certificatePath, string? keyPath)
+    {
+        if (!string.IsNullOrWhiteSpace(keyPath))
+            return keyPath;
+
+        var candidateKeyPath = Path.ChangeExtension(certificatePath, ".key");
+        return File.Exists(candidateKeyPath) ? candidateKeyPath : certificatePath;
     }
 
     private static string NormalizeHost(string host) => host.Trim().TrimEnd('.').ToLowerInvariant();
@@ -164,6 +192,7 @@ public sealed class TlsCertificateSelector
     {
         public string? Path { get; set; }
         public string? Password { get; set; }
+        public string? KeyPath { get; set; }
         public string[]? Hosts { get; set; }
     }
 }

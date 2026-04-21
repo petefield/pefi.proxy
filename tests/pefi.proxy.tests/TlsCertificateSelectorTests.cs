@@ -101,6 +101,70 @@ public class TlsCertificateSelectorTests
         }
     }
 
+    [Fact]
+    public void FromConfiguration_WithPemCertificate_LoadsCertificateForConfiguredHost()
+    {
+        var certificatePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pem");
+        var keyPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.key");
+        CreatePemCertificateFiles("pem.pefi.co.uk", certificatePath, keyPath);
+
+        try
+        {
+            using var expectedCertificate = X509Certificate2.CreateFromPemFile(certificatePath, keyPath);
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Tls:Certificates:0:Path"] = certificatePath,
+                    ["Tls:Certificates:0:KeyPath"] = keyPath,
+                    ["Tls:Certificates:0:Hosts:0"] = "pem.pefi.co.uk",
+                })
+                .Build();
+
+            var selector = TlsCertificateSelector.FromConfiguration(configuration.GetSection("Tls"));
+
+            Assert.True(selector.HasCertificates);
+            Assert.Equal(expectedCertificate.Thumbprint, selector.Select("pem.pefi.co.uk")?.Thumbprint);
+        }
+        finally
+        {
+            TryDelete(certificatePath);
+            TryDelete(keyPath);
+        }
+    }
+
+    [Fact]
+    public void FromConfiguration_WithPemCertificateDirectory_LoadsCertificateByDnsName()
+    {
+        var certificateDirectory = Path.Combine(Path.GetTempPath(), $"tls-pem-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(certificateDirectory);
+
+        var certificatePath = Path.Combine(certificateDirectory, "pem.pefi.co.uk.pem");
+        var keyPath = Path.Combine(certificateDirectory, "pem.pefi.co.uk.key");
+        CreatePemCertificateFiles("pem.pefi.co.uk", certificatePath, keyPath);
+
+        try
+        {
+            using var expectedCertificate = X509Certificate2.CreateFromPemFile(certificatePath, keyPath);
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Tls:Directory"] = certificateDirectory,
+                })
+                .Build();
+
+            var selector = TlsCertificateSelector.FromConfiguration(configuration.GetSection("Tls"));
+
+            Assert.True(selector.HasCertificates);
+            Assert.Equal(expectedCertificate.Thumbprint, selector.Select("pem.pefi.co.uk")?.Thumbprint);
+        }
+        finally
+        {
+            TryDelete(certificatePath);
+            TryDelete(keyPath);
+            TryDeleteDirectory(certificateDirectory);
+        }
+    }
+
     private static string CreateCertificateFile(string commonName, string password)
     {
         var filePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pfx");
@@ -118,6 +182,18 @@ public class TlsCertificateSelectorTests
             DateTimeOffset.UtcNow.AddDays(CertificateValidToDaysOffset));
 
         File.WriteAllBytes(filePath, certificate.Export(X509ContentType.Pfx, password));
+    }
+
+    private static void CreatePemCertificateFiles(string commonName, string certificatePath, string keyPath)
+    {
+        using var rsa = RSA.Create(2048);
+        var request = new CertificateRequest($"CN={commonName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var certificate = request.CreateSelfSigned(
+            DateTimeOffset.UtcNow.AddDays(CertificateValidFromDaysOffset),
+            DateTimeOffset.UtcNow.AddDays(CertificateValidToDaysOffset));
+
+        File.WriteAllText(certificatePath, certificate.ExportCertificatePem());
+        File.WriteAllText(keyPath, rsa.ExportPkcs8PrivateKeyPem());
     }
 
     private static void TryDelete(string filePath)
