@@ -6,8 +6,8 @@
 <h1>Proxy Routes</h1>
 
 <div class="route-toolbar">
-    <button class="route-toolbar-button" @onclick="ShowCreateRouteForm">
-        Add Route
+    <button class="route-toolbar-button" @onclick="ToggleCreateRouteForm">
+        @(showCreateRouteForm ? "Hide Add Route Form" : "Add Route")
     </button>
 </div>
 
@@ -111,8 +111,8 @@ else if (config is not null)
     protected override async Task OnInitializedAsync()
         => await LoadConfigAsync();
 
-    private void ShowCreateRouteForm()
-        => showCreateRouteForm = true;
+    private void ToggleCreateRouteForm()
+        => showCreateRouteForm = !showCreateRouteForm;
 
     private async Task LoadConfigAsync()
     {
