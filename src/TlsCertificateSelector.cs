@@ -136,7 +136,11 @@ public sealed class TlsCertificateSelector
     private static string ResolvePemKeyPath(string certificatePath, string? keyPath)
     {
         if (!string.IsNullOrWhiteSpace(keyPath))
+        {
+            if (!File.Exists(keyPath))
+                throw new InvalidOperationException($"Unable to find PEM key file '{keyPath}' for certificate '{certificatePath}'.");
             return keyPath;
+        }
 
         var candidateKeyPath = Path.ChangeExtension(certificatePath, ".key");
         return File.Exists(candidateKeyPath) ? candidateKeyPath : certificatePath;
