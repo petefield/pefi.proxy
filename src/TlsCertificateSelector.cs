@@ -29,78 +29,58 @@ public sealed class TlsCertificateSelector
 
     public X509Certificate2? Select(string? serverName)
     {
+        X509Certificate2? certificate = null;
+
         if (!string.IsNullOrWhiteSpace(serverName))
         {
             var normalizedServerName = NormalizeHost(serverName);
-            if (_hostCertificates.TryGetValue(normalizedServerName, out var certificate))
-                return certificate;
+
+            if (!_hostCertificates.TryGetValue(normalizedServerName, out certificate))
+            {
+                var wildcardServerName = "*." + string.Join('.', normalizedServerName.Split('.').Skip(1));
+                
+                if (!_hostCertificates.TryGetValue(wildcardServerName, out certificate))
+                {
+                    Console.WriteLine($"No TLS certificate found for server name '{serverName}' (normalized: '{normalizedServerName}', wildcard: '{wildcardServerName}').");
+                }
+            }
         }
 
-        return _defaultCertificate;
+        certificate ??= _defaultCertificate;
+
+        Console.WriteLine($"TLS certificate selected for server name '{serverName}': {(certificate != null ? certificate.Subject : "none")}.");
+
+        return certificate;
     }
 
-    public static TlsCertificateSelector FromConfiguration(IConfiguration tlsSection)
+    public static TlsCertificateSelector FromDirectory(IConfiguration tlsSection)
     {
         var hostCertificates = new Dictionary<string, X509Certificate2>(StringComparer.OrdinalIgnoreCase);
         var loadedCertificates = new List<X509Certificate2>();
         X509Certificate2? defaultCertificate = null;
 
-        var certificates = tlsSection.GetSection("Certificates").Get<List<TlsCertificateConfiguration>>() ?? [];
-        for (var index = 0; index < certificates.Count; index++)
-        {
-            var certificateConfig = certificates[index];
-            if (string.IsNullOrWhiteSpace(certificateConfig.Path))
-                continue;
-
-            X509Certificate2 certificate;
-            try
-            {
-                certificate = LoadCertificate(certificateConfig.Path, certificateConfig.Password, certificateConfig.KeyPath);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(
-                    $"Unable to load TLS certificate at index {index} from path '{certificateConfig.Path}'.",
-                    ex);
-            }
-
-            loadedCertificates.Add(certificate);
-            defaultCertificate ??= certificate;
-
-            foreach (var host in certificateConfig.Hosts ?? [])
-            {
-                if (string.IsNullOrWhiteSpace(host))
-                    continue;
-
-                hostCertificates[NormalizeHost(host)] = certificate;
-            }
-        }
-
         var certificateDirectoryPath = tlsSection.GetValue<string>("Directory");
         Console.WriteLine($"Certificate Directory Path {certificateDirectoryPath}");
+
         if (!string.IsNullOrWhiteSpace(certificateDirectoryPath) && Directory.Exists(certificateDirectoryPath))
         {
             Console.WriteLine($"Certificate Directory Path {certificateDirectoryPath} - exists");
 
-            var directoryPassword = tlsSection.GetValue<string>("DirectoryPassword");
             var certificatePaths = Directory.EnumerateFiles(certificateDirectoryPath, "*", SearchOption.AllDirectories)
                 .Where(path =>
                 {
-                    var extension = Path.GetExtension(path);
-                    return extension.Equals(".pfx", StringComparison.OrdinalIgnoreCase)
-                        || extension.Equals(".p12", StringComparison.OrdinalIgnoreCase)
-                        || extension.Equals(".pem", StringComparison.OrdinalIgnoreCase);
-                })
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+                    var filename = Path.GetFileName(path);
+                    return String.Equals (filename, "fullchain.pem", StringComparison.OrdinalIgnoreCase) ;
+                });
 
             foreach (var certificatePath in certificatePaths)
             {
                Console.WriteLine($" loading  {certificatePath}");
 
-                X509Certificate2 certificate;
+                X509Certificate2? certificate;
                 try
                 {
-                    certificate = LoadCertificate(certificatePath, directoryPassword);
+                    certificate = LoadCertificate(certificatePath);
                 }
                 catch (Exception ex)
                 {
@@ -126,7 +106,7 @@ public sealed class TlsCertificateSelector
         return new TlsCertificateSelector(hostCertificates, defaultCertificate, loadedCertificates);
     }
 
-   private static X509Certificate2? LoadCertificate(string certificatePath, string? password, string? keyPath = null)
+   private static X509Certificate2? LoadCertificate(string certificatePath)
 {
     var fileName = Path.GetFileName(certificatePath);
     var directory = Path.GetDirectoryName(certificatePath);
@@ -134,7 +114,7 @@ public sealed class TlsCertificateSelector
 
     if(fileName.Equals("fullchain.pem", StringComparison.OrdinalIgnoreCase))
     {
-        var effectiveKeyPath = Path.Combine(directory, "privkey.pem");
+        var effectiveKeyPath = Path.Combine(directory!, "privkey.pem");
         Console.WriteLine($"Loading PEM certificate with separate key file: cert={certificatePath}, key={effectiveKeyPath}");
         certificate = X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath);
 
@@ -150,21 +130,7 @@ public sealed class TlsCertificateSelector
     }
 
     return null;
-
 }
-
-    private static string ResolvePemKeyPath(string certificatePath, string? keyPath)
-    {
-        if (!string.IsNullOrWhiteSpace(keyPath))
-        {
-            if (!File.Exists(keyPath))
-                throw new InvalidOperationException($"Unable to find PEM key file '{keyPath}' for certificate '{certificatePath}' (configured via Tls:Certificates:*:KeyPath).");
-            return keyPath;
-        }
-
-        var candidateKeyPath = Path.ChangeExtension(certificatePath, ".key");
-        return File.Exists(candidateKeyPath) ? candidateKeyPath : certificatePath;
-    }
 
     private static string NormalizeHost(string host) => host.Trim().TrimEnd('.').ToLowerInvariant();
 

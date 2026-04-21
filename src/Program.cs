@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Logging.AddConsole();
 
-var tlsCertificateSelector = TlsCertificateSelector.FromConfiguration(builder.Configuration.GetSection("Tls"));
+var tlsCertificateSelector = TlsCertificateSelector.FromDirectory(builder.Configuration.GetSection("Tls"));
 var httpPort = builder.Configuration.GetValue<int?>("HTTP_PORT") ?? 8080;
 var httpsPort = builder.Configuration.GetValue<int?>("HTTPS_PORT")
     ?? builder.Configuration.GetValue<int?>("Tls:Port")
