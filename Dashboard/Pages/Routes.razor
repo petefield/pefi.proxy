@@ -5,6 +5,31 @@
 
 <h1>Proxy Routes</h1>
 
+<div class="route-form-card">
+    <h3>Add Route</h3>
+    <EditForm Model="createRouteForm" OnValidSubmit="CreateRouteAsync">
+        <div class="route-form-grid">
+            <InputText class="form-control" @bind-Value="createRouteForm.RouteId" placeholder="Route ID (required)" />
+            <InputText class="form-control" @bind-Value="createRouteForm.ClusterId" placeholder="Cluster ID (optional, defaults to Route ID)" />
+            <InputText class="form-control" @bind-Value="createRouteForm.Host" placeholder="Host (required, e.g. api.pefi.co.uk)" />
+            <InputText class="form-control" @bind-Value="createRouteForm.DestinationAddress" placeholder="Destination URL (required, e.g. http://host.docker.internal:8080)" />
+            <InputText class="form-control" @bind-Value="createRouteForm.Path" placeholder="Path (optional, e.g. /api/{**catch-all})" />
+        </div>
+        <button class="btn btn-primary mt-3" disabled="@submitting">
+            @(submitting ? "Adding..." : "Add Route")
+        </button>
+    </EditForm>
+
+    @if (createError is not null)
+    {
+        <div class="alert alert-danger mt-3">@createError</div>
+    }
+    @if (createSuccess is not null)
+    {
+        <div class="alert alert-success mt-3">@createSuccess</div>
+    }
+</div>
+
 @if (loading)
 {
     <p><em>Loading configuration...</em></p>
@@ -66,11 +91,21 @@ else if (config is not null)
 
 @code {
     private ProxyConfig? config;
+    private CreateRouteForm createRouteForm = new();
     private bool loading = true;
+    private bool submitting;
     private string? error;
+    private string? createError;
+    private string? createSuccess;
 
     protected override async Task OnInitializedAsync()
+        => await LoadConfigAsync();
+
+    private async Task LoadConfigAsync()
     {
+        loading = true;
+        error = null;
+
         try
         {
             config = await Http.GetFromJsonAsync<ProxyConfig>("/config");
@@ -85,7 +120,53 @@ else if (config is not null)
         }
     }
 
+    private async Task CreateRouteAsync()
+    {
+        createError = null;
+        createSuccess = null;
+        submitting = true;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/routes", new CreateRouteRequest(
+                createRouteForm.RouteId,
+                createRouteForm.ClusterId,
+                createRouteForm.Host,
+                createRouteForm.DestinationAddress,
+                createRouteForm.Path));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                createError = errorResponse?.error ?? $"Failed to create route (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+
+            createSuccess = "Route added successfully.";
+            createRouteForm = new();
+            await LoadConfigAsync();
+        }
+        catch (Exception ex)
+        {
+            createError = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
     public record ProxyConfig(RouteEntry[] Routes, ClusterEntry[] Clusters);
+    public class CreateRouteForm
+    {
+        public string? RouteId { get; set; }
+        public string? ClusterId { get; set; }
+        public string? Host { get; set; }
+        public string? DestinationAddress { get; set; }
+        public string? Path { get; set; }
+    }
+    public record CreateRouteRequest(string? RouteId, string? ClusterId, string? Host, string? DestinationAddress, string? Path);
+    public record ErrorResponse(string? error);
     public record RouteEntry(string? RouteId, string? ClusterId, MatchEntry? Match);
     public record MatchEntry(string[]? Hosts, string? Path);
     public record ClusterEntry(string? ClusterId, Dictionary<string, DestinationEntry>? Destinations);
