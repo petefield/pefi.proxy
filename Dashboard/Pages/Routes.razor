@@ -6,7 +6,7 @@
 <h1>Proxy Routes</h1>
 
 <div class="route-toolbar">
-    <button class="route-toolbar-button" @onclick="ToggleCreateRouteForm">
+    <button class="route-action-button route-toolbar-button" @onclick="ToggleCreateRouteForm">
         @(showCreateRouteForm ? "Hide Add Route Form" : "Add Route")
     </button>
 </div>
@@ -23,7 +23,7 @@
                 <InputText class="form-control" @bind-Value="createRouteForm.DestinationAddress" placeholder="Destination URL (required, e.g. http://host.docker.internal:8080)" />
                 <InputText class="form-control" @bind-Value="createRouteForm.Path" placeholder="Path (optional, e.g. /api/{**catch-all})" />
             </div>
-            <button class="route-submit-button" disabled="@submitting">
+            <button class="route-action-button route-submit-button" disabled="@submitting">
                 @(submitting ? "Adding..." : "Add Route")
             </button>
         </EditForm>
