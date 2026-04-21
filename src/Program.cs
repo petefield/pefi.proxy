@@ -1,5 +1,6 @@
 using pefi;
 using Yarp.ReverseProxy.Configuration;
+using PeFi.Proxy;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
