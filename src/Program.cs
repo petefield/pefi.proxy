@@ -7,25 +7,28 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Logging.AddConsole();
 
 var tlsCertificateSelector = TlsCertificateSelector.FromConfiguration(builder.Configuration.GetSection("Tls"));
-if (tlsCertificateSelector.HasCertificates)
-{
-    var httpsPort = builder.Configuration.GetValue<int?>("HTTPS_PORT")
-        ?? builder.Configuration.GetValue<int?>("Tls:Port")
-        ?? 8443;
+var httpPort = builder.Configuration.GetValue<int?>("HTTP_PORT") ?? 8080;
+var httpsPort = builder.Configuration.GetValue<int?>("HTTPS_PORT")
+    ?? builder.Configuration.GetValue<int?>("Tls:Port")
+    ?? 8443;
 
-    builder.WebHost.ConfigureKestrel(options =>
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Always accept HTTP
+    options.ListenAnyIP(httpPort);
+
+    // Add HTTPS only when certs are configured
+    if (tlsCertificateSelector.HasCertificates)
     {
         options.ConfigureHttpsDefaults(httpsOptions =>
         {
-            httpsOptions.ServerCertificateSelector = (_, serverName) =>{
-                Console.WriteLine($"Servername : {serverName}");
-                return tlsCertificateSelector.Select(serverName);
-            };
+            httpsOptions.ServerCertificateSelector = (_, serverName) =>
+                tlsCertificateSelector.Select(serverName);
         });
 
         options.ListenAnyIP(httpsPort, listenOptions => listenOptions.UseHttps());
-    });
-}
+    }
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
