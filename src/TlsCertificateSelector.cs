@@ -136,6 +136,7 @@ public sealed class TlsCertificateSelector
     if(fileName.Equals("fullchain.pem", StringComparison.OrdinalIgnoreCase))
     {
         var effectiveKeyPath = Path.Combine(directory, "privkey.pem");
+        Console.WriteLine($"Loading PEM certificate with separate key file: cert={certificatePath}, key={effectiveKeyPath}");
         certificate = X509Certificate2.CreateFromPemFile(certificatePath, effectiveKeyPath);
 
         if (!certificate.HasPrivateKey)
