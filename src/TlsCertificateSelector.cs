@@ -125,7 +125,7 @@ public sealed class TlsCertificateSelector
         }
 
         if (!extension.Equals(".pem", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"Unsupported TLS certificate file extension '{extension}' for '{certificatePath}'.");
+            throw new InvalidOperationException($"Unsupported TLS certificate file extension '{extension}' for '{certificatePath}'. Supported extensions are .pfx, .p12, and .pem.");
 
         var effectiveKeyPath = ResolvePemKeyPath(certificatePath, keyPath);
         return string.IsNullOrWhiteSpace(password)
@@ -138,7 +138,7 @@ public sealed class TlsCertificateSelector
         if (!string.IsNullOrWhiteSpace(keyPath))
         {
             if (!File.Exists(keyPath))
-                throw new InvalidOperationException($"Unable to find PEM key file '{keyPath}' for certificate '{certificatePath}'.");
+                throw new InvalidOperationException($"Unable to find PEM key file '{keyPath}' for certificate '{certificatePath}' (configured via Tls:Certificates:*:KeyPath).");
             return keyPath;
         }
 

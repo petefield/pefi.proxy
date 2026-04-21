@@ -10,6 +10,7 @@ public class TlsCertificateSelectorTests
 {
     private const int CertificateValidFromDaysOffset = -1;
     private const int CertificateValidToDaysOffset = 1;
+    private const int TestRsaKeySizeBits = 3072;
 
     [Fact]
     public void FromConfiguration_WithMultipleCertificates_SelectsByHostAndFallsBackToDefault()
@@ -175,7 +176,7 @@ public class TlsCertificateSelectorTests
 
     private static void CreateCertificateFile(string commonName, string password, string filePath)
     {
-        using var rsa = RSA.Create(2048);
+        using var rsa = RSA.Create(TestRsaKeySizeBits);
         var request = new CertificateRequest($"CN={commonName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         using var certificate = request.CreateSelfSigned(
             DateTimeOffset.UtcNow.AddDays(CertificateValidFromDaysOffset),
@@ -186,7 +187,7 @@ public class TlsCertificateSelectorTests
 
     private static void CreatePemCertificateFiles(string commonName, string certificatePath, string keyPath)
     {
-        using var rsa = RSA.Create(2048);
+        using var rsa = RSA.Create(TestRsaKeySizeBits);
         var request = new CertificateRequest($"CN={commonName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         using var certificate = request.CreateSelfSigned(
             DateTimeOffset.UtcNow.AddDays(CertificateValidFromDaysOffset),
