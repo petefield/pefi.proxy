@@ -56,6 +56,22 @@ Configuration is loaded from `appsettings.json`, environment-specific overrides 
 | `Messaging:username` | `Messaging__username` | RabbitMQ username |
 | `Messaging:password` | `Messaging__password` | RabbitMQ password |
 
+### TLS termination
+
+The proxy can terminate TLS for multiple hostnames by loading one or more certificates and selecting the right certificate using SNI. Forwarding to upstream destinations remains unchanged (typically `http://...` cluster addresses).
+
+```bash
+Tls__Certificates__0__Path=/certs/pub.the-fields.net.pfx
+Tls__Certificates__0__Password=changeit
+Tls__Certificates__0__Hosts__0=pub.the-fields.net
+
+Tls__Certificates__1__Path=/certs/tour.pefi.co.uk.pfx
+Tls__Certificates__1__Password=changeit
+Tls__Certificates__1__Hosts__0=tour.pefi.co.uk
+```
+
+The first configured certificate is used as the default when SNI is not provided or no host-specific match is found.
+
 ### Static Routes
 
 Static routes can be configured via environment variables (recommended for Docker) or in `appsettings.json`.
