@@ -44,6 +44,8 @@ builder.Services.AddPeFiPersistance(options => {
     options.ConnectionString = builder.Configuration.GetValue<string>("MongoDB:ConnectionString") ?? "";
 });
 
+builder.Services.AddHostedService<ProxyConfig>();
+
 var app = builder.Build();
 if (tlsCertificateSelector.HasCertificates)
     app.Lifetime.ApplicationStopping.Register(tlsCertificateSelector.Dispose);
