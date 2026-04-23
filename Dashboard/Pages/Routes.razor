@@ -70,24 +70,15 @@ else if (config is not null)
             <div class="route-card">
                 <div class="route-header">
                     <span class="route-id">@route.RouteId</span>
+                </div>
+                <div class="route-detail">
+                    <span class="route-detail-label">Host</span>
+                    <span>@(route.Match?.Hosts is not null ? string.Join(", ", route.Match.Hosts) : "—")</span>
+                </div>
+                <div class="route-detail">
+                    <span class="route-detail-label">Cluster</span>
                     <span class="badge">@(route.ClusterId ?? "no cluster")</span>
                 </div>
-                @if (route.Match?.Hosts is not null)
-                {
-                    <div class="route-hosts">
-                        @foreach (var host in route.Match.Hosts)
-                        {
-                            <span class="host-tag">@host</span>
-                        }
-                    </div>
-                }
-                @if (route.Match?.Path is not null)
-                {
-                    <div class="route-path">
-                        <code>@route.Match.Path</code>
-                    </div>
-                }
-
             </div>
         }
     </div>

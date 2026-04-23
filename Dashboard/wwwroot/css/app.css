@@ -342,6 +342,22 @@ code {
     color: var(--text-primary);
 }
 
+.route-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+.route-detail-label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 .badge {
     background: var(--accent-dim);
     color: var(--accent);
