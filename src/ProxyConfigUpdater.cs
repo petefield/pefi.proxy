@@ -16,7 +16,7 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
 
     private async Task UpdateConfig()
     {
-        var persistedRoutes = await dataStore.Get<PersistedRoute>("pefi", "routes");
+        var persistedRoutes = (await dataStore.Get<PersistedRoute>("pefi", "routes")).ToList();
 
         var routes = persistedRoutes.Select(p => p.ToRouteConfig()).ToList();
         var clusters = persistedRoutes.Select(p => p.ToClusterConfig()).ToList();
