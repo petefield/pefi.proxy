@@ -220,11 +220,68 @@ code {
     box-sizing: border-box;
 }
 
+.route-form-card select.form-control {
+    appearance: none;
+    cursor: pointer;
+}
+
 .route-form-card .form-control:focus {
     background: rgba(15, 23, 42, 0.9);
     color: var(--text-primary);
     border-color: var(--accent);
     box-shadow: 0 0 0 0.2rem rgba(56, 189, 248, 0.18);
+}
+
+/* ============================================
+   Cluster form extras
+   ============================================ */
+
+.cluster-destinations-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1rem 0 0.5rem;
+}
+
+.cluster-destinations-header h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.cluster-destination-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.cluster-destination-row .form-control {
+    flex: 1;
+}
+
+.route-action-button-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.route-action-button-danger {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    white-space: nowrap;
+}
+
+.route-action-button-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+.badge-purple {
+    background: rgba(167, 139, 250, 0.15);
+    color: var(--accent-purple);
+    border-color: rgba(167, 139, 250, 0.3);
 }
 
 /* ============================================

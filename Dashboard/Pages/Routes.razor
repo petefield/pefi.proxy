@@ -18,11 +18,23 @@
         <EditForm Model="createRouteForm" OnValidSubmit="CreateRouteAsync">
             <div class="route-form-grid">
                 <InputText class="form-control" @bind-Value="createRouteForm.RouteId" placeholder="Route ID (required)" />
-                <InputText class="form-control" @bind-Value="createRouteForm.ClusterId" placeholder="Cluster ID (optional, defaults to Route ID)" />
                 <InputText class="form-control" @bind-Value="createRouteForm.Host" placeholder="Host (required, e.g. api.pefi.co.uk)" />
-                <InputText class="form-control" @bind-Value="createRouteForm.DestinationAddress" placeholder="Destination URL (required, e.g. http://host.docker.internal:8080)" />
                 <InputText class="form-control" @bind-Value="createRouteForm.Path" placeholder="Path (optional, e.g. /api/{**catch-all})" />
+                <select class="form-control" @bind="createRouteForm.ClusterId">
+                    <option value="">-- Select a cluster (required) --</option>
+                    @if (config is not null)
+                    {
+                        @foreach (var cluster in config.Clusters)
+                        {
+                            <option value="@cluster.ClusterId">@cluster.ClusterId</option>
+                        }
+                    }
+                </select>
             </div>
+            @if (config?.Clusters.Length == 0)
+            {
+                <div class="alert alert-warning mt-3">No clusters exist yet. <a href="/dashboard/clusters">Create a cluster</a> first.</div>
+            }
             <button class="route-action-button route-submit-button" disabled="@submitting">
                 @(submitting ? "Adding..." : "Add Route")
             </button>
@@ -145,7 +157,6 @@ else if (config is not null)
                 createRouteForm.RouteId,
                 createRouteForm.ClusterId,
                 createRouteForm.Host,
-                createRouteForm.DestinationAddress,
                 createRouteForm.Path));
 
             if (!response.IsSuccessStatusCode)
@@ -175,10 +186,9 @@ else if (config is not null)
         public string? RouteId { get; set; }
         public string? ClusterId { get; set; }
         public string? Host { get; set; }
-        public string? DestinationAddress { get; set; }
         public string? Path { get; set; }
     }
-    public record CreateRouteRequest(string? RouteId, string? ClusterId, string? Host, string? DestinationAddress, string? Path);
+    public record CreateRouteRequest(string? RouteId, string? ClusterId, string? Host, string? Path);
     public record ErrorResponse(string? error);
     public record RouteEntry(string? RouteId, string? ClusterId, MatchEntry? Match);
     public record MatchEntry(string[]? Hosts, string? Path);

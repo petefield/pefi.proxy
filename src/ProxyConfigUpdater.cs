@@ -10,16 +10,17 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Loading persisted routes from database.");
+        logger.LogInformation("Loading persisted routes and clusters from database.");
         await UpdateConfig();
     }
 
     private async Task UpdateConfig()
     {
         var persistedRoutes = (await dataStore.Get<PersistedRoute>("pefi", "routes")).ToList();
+        var persistedClusters = (await dataStore.Get<PersistedCluster>("pefi", "clusters")).ToList();
 
         var routes = persistedRoutes.Select(p => p.ToRouteConfig()).ToList();
-        var clusters = persistedRoutes.Select(p => p.ToClusterConfig()).ToList();
+        var clusters = persistedClusters.Select(c => c.ToClusterConfig()).ToList();
 
         configProvider.Update(routes, clusters);
     }

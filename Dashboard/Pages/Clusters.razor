@@ -1,0 +1,196 @@
+@page "/clusters"
+@inject HttpClient Http
+
+<PageTitle>Clusters - PeFi Proxy</PageTitle>
+
+<h1>Proxy Clusters</h1>
+
+<div class="route-toolbar">
+    <button class="route-action-button" @onclick="ToggleCreateClusterForm">
+        @(showCreateClusterForm ? "Hide Add Cluster Form" : "Add Cluster")
+    </button>
+</div>
+
+@if (showCreateClusterForm)
+{
+    <div class="route-form-card">
+        <h3>Add Cluster</h3>
+        <EditForm Model="createClusterForm" OnValidSubmit="CreateClusterAsync">
+            <div class="route-form-grid">
+                <InputText class="form-control" @bind-Value="createClusterForm.ClusterId" placeholder="Cluster ID (required, e.g. my-api)" />
+            </div>
+
+            <div class="cluster-destinations-header">
+                <h4>Destinations</h4>
+                <button type="button" class="route-action-button route-action-button-sm" @onclick="AddDestination">+ Add Destination</button>
+            </div>
+
+            @foreach (var dest in createClusterForm.Destinations)
+            {
+                <div class="cluster-destination-row">
+                    <InputText class="form-control" @bind-Value="dest.Key" placeholder="Name (e.g. destination1)" />
+                    <InputText class="form-control" @bind-Value="dest.Address" placeholder="Address (e.g. http://host.docker.internal:8080)" />
+                    @if (createClusterForm.Destinations.Count > 1)
+                    {
+                        <button type="button" class="route-action-button route-action-button-danger" @onclick="() => RemoveDestination(dest)">Remove</button>
+                    }
+                </div>
+            }
+
+            <button class="route-action-button route-submit-button" disabled="@submitting">
+                @(submitting ? "Adding..." : "Add Cluster")
+            </button>
+        </EditForm>
+
+        @if (createError is not null)
+        {
+            <div class="alert alert-danger mt-3">@createError</div>
+        }
+        @if (createSuccess is not null)
+        {
+            <div class="alert alert-success mt-3">@createSuccess</div>
+        }
+    </div>
+}
+
+@if (loading)
+{
+    <p><em>Loading clusters...</em></p>
+}
+else if (error is not null)
+{
+    <div class="alert alert-danger">Failed to load clusters: @error</div>
+}
+else if (clusters is not null)
+{
+    <div class="route-count">@clusters.Length clusters configured</div>
+
+    <div class="route-grid">
+        @foreach (var cluster in clusters)
+        {
+            <div class="route-card">
+                <div class="route-header">
+                    <span class="route-id">@cluster.ClusterId</span>
+                    <span class="badge badge-purple">@(cluster.Destinations?.Count ?? 0) destination@(cluster.Destinations?.Count == 1 ? "" : "s")</span>
+                </div>
+                @if (cluster.Destinations is not null && cluster.Destinations.Count > 0)
+                {
+                    <div class="route-destinations">
+                        @foreach (var dest in cluster.Destinations)
+                        {
+                            <div class="destination">
+                                <span class="dest-key">@dest.Key</span>
+                                <span class="dest-address">@dest.Value</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (clusters.Length == 0)
+    {
+        <p class="text-muted">No clusters configured.</p>
+    }
+}
+
+@code {
+    private PersistedClusterEntry[]? clusters;
+    private CreateClusterForm createClusterForm = new();
+    private bool showCreateClusterForm = false;
+    private bool loading = true;
+    private bool submitting;
+    private string? error;
+    private string? createError;
+    private string? createSuccess;
+
+    protected override async Task OnInitializedAsync()
+        => await LoadClustersAsync();
+
+    private void ToggleCreateClusterForm()
+        => showCreateClusterForm = !showCreateClusterForm;
+
+    private void AddDestination()
+        => createClusterForm.Destinations.Add(new DestinationRow());
+
+    private void RemoveDestination(DestinationRow dest)
+        => createClusterForm.Destinations.Remove(dest);
+
+    private async Task LoadClustersAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            clusters = await Http.GetFromJsonAsync<PersistedClusterEntry[]>("/clusters");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task CreateClusterAsync()
+    {
+        createError = null;
+        createSuccess = null;
+        submitting = true;
+
+        try
+        {
+            var destinations = createClusterForm.Destinations
+                .Where(d => !string.IsNullOrWhiteSpace(d.Key) && !string.IsNullOrWhiteSpace(d.Address))
+                .ToDictionary(d => d.Key!, d => d.Address!);
+
+            if (destinations.Count == 0)
+            {
+                createError = "At least one destination with a name and address is required.";
+                return;
+            }
+
+            var response = await Http.PostAsJsonAsync("/clusters", new CreateClusterRequest(
+                createClusterForm.ClusterId,
+                destinations));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                createError = errorResponse?.error ?? $"Failed to create cluster (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+
+            createSuccess = "Cluster added successfully.";
+            createClusterForm = new();
+            await LoadClustersAsync();
+        }
+        catch (Exception ex)
+        {
+            createError = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    public record PersistedClusterEntry(string? ClusterId, Dictionary<string, string>? Destinations);
+    public record CreateClusterRequest(string? ClusterId, Dictionary<string, string>? Destinations);
+    public record ErrorResponse(string? error);
+
+    public class CreateClusterForm
+    {
+        public string? ClusterId { get; set; }
+        public List<DestinationRow> Destinations { get; set; } = [new DestinationRow()];
+    }
+
+    public class DestinationRow
+    {
+        public string? Key { get; set; }
+        public string? Address { get; set; }
+    }
+}

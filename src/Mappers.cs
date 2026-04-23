@@ -16,13 +16,13 @@ public static class Mappers
             }
         };
 
-    public static ClusterConfig ToClusterConfig(this PersistedRoute route) =>
+    public static ClusterConfig ToClusterConfig(this PersistedCluster cluster) =>
         new ClusterConfig
         {
-            ClusterId = route.ClusterId,
-            Destinations = new Dictionary<string, DestinationConfig>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["destination1"] = new() { Address = route.DestinationAddress }
-            }
+            ClusterId = cluster.ClusterId,
+            Destinations = cluster.Destinations.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new DestinationConfig { Address = kvp.Value },
+                StringComparer.OrdinalIgnoreCase)
         };
 }

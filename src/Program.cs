@@ -62,6 +62,61 @@ app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfig
 }).WithName("Get Current Config")
 .WithOpenApi();
 
+app.MapGet("/clusters", async (IDataStore dataStore) =>
+{
+    var clusters = await dataStore.Get<PersistedCluster>("pefi", "clusters");
+    return Results.Ok(clusters);
+}).WithName("Get Clusters")
+.WithOpenApi();
+
+app.MapPost("/clusters", async (CreateClusterRequest request, InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider, IDataStore dataStore) =>
+{
+    if (string.IsNullOrWhiteSpace(request.ClusterId))
+        return Results.BadRequest(new { error = "clusterId is required." });
+
+    if (request.Destinations is null || request.Destinations.Count == 0)
+        return Results.BadRequest(new { error = "At least one destination is required." });
+
+    foreach (var (key, address) in request.Destinations)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+            return Results.BadRequest(new { error = $"Destination '{key}' has an empty address." });
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            return Results.BadRequest(new { error = $"Destination '{key}' must be an absolute http/https URL." });
+    }
+
+    var clusterId = request.ClusterId.Trim();
+
+    var appSettingsConfig = appSettingsConfigProvider.GetConfig();
+    var memoryConfig = memoryConfigProvider.GetConfig();
+
+    if (appSettingsConfig.Clusters.Any(c => string.Equals(c.ClusterId, clusterId, StringComparison.OrdinalIgnoreCase))
+        || memoryConfig.Clusters.Any(c => string.Equals(c.ClusterId, clusterId, StringComparison.OrdinalIgnoreCase)))
+        return Results.Conflict(new { error = $"A cluster with id '{clusterId}' already exists." });
+
+    var destinations = request.Destinations
+        .ToDictionary(kvp => kvp.Key.Trim(), kvp => kvp.Value.Trim().TrimEnd('/'));
+
+    var persisted = new PersistedCluster
+    {
+        Id = clusterId,
+        ClusterId = clusterId,
+        Destinations = destinations
+    };
+
+    await dataStore.Add<PersistedCluster>("pefi", "clusters", persisted);
+
+    var clusters = memoryConfig.Clusters.ToList();
+    clusters.Add(persisted.ToClusterConfig());
+    var routes = memoryConfig.Routes.ToList();
+    memoryConfigProvider.Update(routes, clusters);
+
+    return Results.Created($"/clusters/{clusterId}", persisted);
+})
+.WithName("Create Cluster")
+.WithOpenApi();
+
 app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider, IDataStore dataStore) =>
 {
     if (string.IsNullOrWhiteSpace(request.RouteId))
@@ -70,17 +125,12 @@ app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider
     if (string.IsNullOrWhiteSpace(request.Host))
         return Results.BadRequest(new { error = "host is required." });
 
-    if (string.IsNullOrWhiteSpace(request.DestinationAddress))
-        return Results.BadRequest(new { error = "destinationAddress is required." });
-
-    if (!Uri.TryCreate(request.DestinationAddress, UriKind.Absolute, out var destinationUri)
-        || (destinationUri.Scheme != Uri.UriSchemeHttp && destinationUri.Scheme != Uri.UriSchemeHttps))
-        return Results.BadRequest(new { error = "destinationAddress must be an absolute http/https URL." });
+    if (string.IsNullOrWhiteSpace(request.ClusterId))
+        return Results.BadRequest(new { error = "clusterId is required." });
 
     var routeId = request.RouteId.Trim();
-    var clusterId = string.IsNullOrWhiteSpace(request.ClusterId) ? routeId : request.ClusterId.Trim();
+    var clusterId = request.ClusterId.Trim();
     var host = request.Host.Trim();
-    var destinationAddress = destinationUri.ToString().TrimEnd('/');
     var path = string.IsNullOrWhiteSpace(request.Path) ? null : request.Path.Trim();
 
     var appSettingsConfig = appSettingsConfigProvider.GetConfig();
@@ -90,9 +140,13 @@ app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider
         || memoryConfig.Routes.Any(r => string.Equals(r.RouteId, routeId, StringComparison.OrdinalIgnoreCase)))
         return Results.Conflict(new { error = $"A route with id '{routeId}' already exists." });
 
-    if (appSettingsConfig.Clusters.Any(c => string.Equals(c.ClusterId, clusterId, StringComparison.OrdinalIgnoreCase))
-        || memoryConfig.Clusters.Any(c => string.Equals(c.ClusterId, clusterId, StringComparison.OrdinalIgnoreCase)))
-        return Results.Conflict(new { error = $"A cluster with id '{clusterId}' already exists." });
+    // Cluster must already exist
+    var clusterExists =
+        appSettingsConfig.Clusters.Any(c => string.Equals(c.ClusterId, clusterId, StringComparison.OrdinalIgnoreCase))
+        || memoryConfig.Clusters.Any(c => string.Equals(c.ClusterId, clusterId, StringComparison.OrdinalIgnoreCase));
+
+    if (!clusterExists)
+        return Results.UnprocessableEntity(new { error = $"Cluster '{clusterId}' does not exist. Create it first." });
 
     var routes = memoryConfig.Routes.ToList();
     routes.Add(new RouteConfig
@@ -106,17 +160,7 @@ app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider
         }
     });
 
-    var clusters = memoryConfig.Clusters.ToList();
-    clusters.Add(new ClusterConfig
-    {
-        ClusterId = clusterId,
-        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["destination1"] = new() { Address = destinationAddress }
-        }
-    });
-
-    memoryConfigProvider.Update(routes, clusters);
+    memoryConfigProvider.Update(routes, memoryConfig.Clusters.ToList());
 
     await dataStore.Add<PersistedRoute>("pefi", "routes", new PersistedRoute
     {
@@ -124,11 +168,10 @@ app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider
         RouteId = routeId,
         ClusterId = clusterId,
         Host = host,
-        DestinationAddress = destinationAddress,
         Path = path
     });
 
-    return Results.Created($"/routes/{routeId}", new CreateRouteResponse(routeId, clusterId, host, destinationAddress, path));
+    return Results.Created($"/routes/{routeId}", new CreateRouteResponse(routeId, clusterId, host, path));
 })
 .WithName("Create Route")
 .WithOpenApi();
@@ -144,7 +187,8 @@ app.MapFallbackToFile("/dashboard/{**path:nonfile}", "dashboard/index.html");
 app.MapFallbackToFile("/dashboard", "dashboard/index.html");
 app.Run();
 
-public record CreateRouteRequest(string? RouteId, string? ClusterId, string? Host, string? DestinationAddress, string? Path);
-public record CreateRouteResponse(string RouteId, string ClusterId, string Host, string DestinationAddress, string? Path);
+public record CreateClusterRequest(string? ClusterId, Dictionary<string, string>? Destinations);
+public record CreateRouteRequest(string? RouteId, string? ClusterId, string? Host, string? Path);
+public record CreateRouteResponse(string RouteId, string ClusterId, string Host, string? Path);
 
 public partial class Program { }

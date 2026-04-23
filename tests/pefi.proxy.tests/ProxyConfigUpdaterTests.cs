@@ -24,23 +24,22 @@ public class ProxyConfigUpdaterTests
         var dataStore = Substitute.For<IDataStore>();
         dataStore.Get<PersistedRoute>(Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
+        dataStore.Get<PersistedCluster>(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(Enumerable.Empty<PersistedCluster>()));
         return dataStore;
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithNoPersistedRoutes_UpdatesConfigWithEmptyCollections()
+    public async Task ExecuteAsync_WithNoPersistedData_UpdatesConfigWithEmptyCollections()
     {
-        // Arrange
         var configProvider = CreateConfigProvider();
         var updater = new ProxyConfig(NullLogger<ProxyConfig>.Instance, configProvider, EmptyDataStore());
 
-        // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         await updater.StartAsync(cts.Token);
         await Task.Delay(100);
         await updater.StopAsync(CancellationToken.None);
 
-        // Assert
         var config = configProvider.GetConfig();
         Assert.Empty(config.Routes);
         Assert.Empty(config.Clusters);
@@ -49,60 +48,63 @@ public class ProxyConfigUpdaterTests
     [Fact]
     public async Task ExecuteAsync_LoadsPersistedRoutesFromDatabase()
     {
-        // Arrange
         var dataStore = Substitute.For<IDataStore>();
         dataStore.Get<PersistedRoute>(Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.FromResult<IEnumerable<PersistedRoute>>(
             [
-                new PersistedRoute
+                new PersistedRoute { Id = "api", RouteId = "api", ClusterId = "api-cluster", Host = "api.pefi.co.uk" }
+            ]));
+        dataStore.Get<PersistedCluster>(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult<IEnumerable<PersistedCluster>>(
+            [
+                new PersistedCluster
                 {
-                    Id = "api",
-                    RouteId = "api",
-                    ClusterId = "api",
-                    Host = "api.pefi.co.uk",
-                    DestinationAddress = "http://host.docker.internal:8080"
+                    Id = "api-cluster",
+                    ClusterId = "api-cluster",
+                    Destinations = new Dictionary<string, string> { ["destination1"] = "http://host.docker.internal:8080" }
                 }
             ]));
 
         var configProvider = CreateConfigProvider();
         var updater = new ProxyConfig(NullLogger<ProxyConfig>.Instance, configProvider, dataStore);
 
-        // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         await updater.StartAsync(cts.Token);
         await Task.Delay(100);
         await updater.StopAsync(CancellationToken.None);
 
-        // Assert
         var config = configProvider.GetConfig();
         Assert.Single(config.Routes);
         Assert.Equal("api", config.Routes[0].RouteId);
         Assert.Single(config.Clusters);
-        Assert.Equal("api", config.Clusters[0].ClusterId);
+        Assert.Equal("api-cluster", config.Clusters[0].ClusterId);
     }
 
     [Fact]
     public async Task ExecuteAsync_LoadsMultiplePersistedRoutes()
     {
-        // Arrange
         var dataStore = Substitute.For<IDataStore>();
         dataStore.Get<PersistedRoute>(Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.FromResult<IEnumerable<PersistedRoute>>(
             [
-                new PersistedRoute { Id = "api", RouteId = "api", ClusterId = "api", Host = "api.pefi.co.uk", DestinationAddress = "http://host.docker.internal:8080" },
-                new PersistedRoute { Id = "web", RouteId = "web", ClusterId = "web", Host = "web.pefi.co.uk", DestinationAddress = "http://host.docker.internal:3000" }
+                new PersistedRoute { Id = "api", RouteId = "api", ClusterId = "api", Host = "api.pefi.co.uk" },
+                new PersistedRoute { Id = "web", RouteId = "web", ClusterId = "web", Host = "web.pefi.co.uk" }
+            ]));
+        dataStore.Get<PersistedCluster>(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult<IEnumerable<PersistedCluster>>(
+            [
+                new PersistedCluster { Id = "api", ClusterId = "api", Destinations = new() { ["d1"] = "http://host.docker.internal:8080" } },
+                new PersistedCluster { Id = "web", ClusterId = "web", Destinations = new() { ["d1"] = "http://host.docker.internal:3000" } }
             ]));
 
         var configProvider = CreateConfigProvider();
         var updater = new ProxyConfig(NullLogger<ProxyConfig>.Instance, configProvider, dataStore);
 
-        // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         await updater.StartAsync(cts.Token);
         await Task.Delay(100);
         await updater.StopAsync(CancellationToken.None);
 
-        // Assert
         var config = configProvider.GetConfig();
         Assert.Equal(2, config.Routes.Count);
         Assert.Equal(2, config.Clusters.Count);
@@ -111,21 +113,16 @@ public class ProxyConfigUpdaterTests
     [Fact]
     public async Task ExecuteAsync_QueriesCorrectDatabaseAndCollection()
     {
-        // Arrange
-        var dataStore = Substitute.For<IDataStore>();
-        dataStore.Get<PersistedRoute>(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
-
+        var dataStore = EmptyDataStore();
         var configProvider = CreateConfigProvider();
         var updater = new ProxyConfig(NullLogger<ProxyConfig>.Instance, configProvider, dataStore);
 
-        // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         await updater.StartAsync(cts.Token);
         await Task.Delay(100);
         await updater.StopAsync(CancellationToken.None);
 
-        // Assert
         await dataStore.Received(1).Get<PersistedRoute>("pefi", "routes");
+        await dataStore.Received(1).Get<PersistedCluster>("pefi", "clusters");
     }
 }
