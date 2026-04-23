@@ -1,5 +1,5 @@
-using pefi.dynamicdns.Services;
 using PeFi.Proxy;
+using PeFi.Proxy.Models;
 using Xunit;
 
 namespace PeFi.Proxy.Tests;
@@ -7,138 +7,114 @@ namespace PeFi.Proxy.Tests;
 public class MappersTests
 {
     [Fact]
-    public void ToRouteConfig_WithValidHostName_ReturnsRouteConfig()
+    public void ToRouteConfig_MapsRouteIdAndClusterId()
     {
-        var service = new GetServiceResponse
+        var route = new PersistedRoute
         {
-            serviceName = "test-service",
-            hostName = "test-service",
-            hostPortNumber = "8080"
+            Id = "api",
+            RouteId = "api",
+            ClusterId = "api-cluster",
+            Host = "api.pefi.co.uk",
+            DestinationAddress = "http://host.docker.internal:8080"
         };
 
-        var result = service.ToRouteConfig();
+        var result = route.ToRouteConfig();
 
-        Assert.NotNull(result);
-        Assert.Equal("test-service", result.RouteId);
-        Assert.Equal("test-service", result.ClusterId);
+        Assert.Equal("api", result.RouteId);
+        Assert.Equal("api-cluster", result.ClusterId);
+    }
+
+    [Fact]
+    public void ToRouteConfig_MapsHost()
+    {
+        var route = new PersistedRoute
+        {
+            Id = "api",
+            RouteId = "api",
+            ClusterId = "api",
+            Host = "api.pefi.co.uk",
+            DestinationAddress = "http://host.docker.internal:8080"
+        };
+
+        var result = route.ToRouteConfig();
+
         Assert.NotNull(result.Match.Hosts);
         Assert.Single(result.Match.Hosts);
-        Assert.Equal("test-service.pefi.co.uk", result.Match.Hosts.First());
+        Assert.Equal("api.pefi.co.uk", result.Match.Hosts.First());
     }
 
     [Fact]
-    public void ToRouteConfig_WithNullHostName_ReturnsNull()
+    public void ToRouteConfig_MapsNullPath()
     {
-        var service = new GetServiceResponse
+        var route = new PersistedRoute
         {
-            serviceName = "test-service",
-            hostName = null
+            Id = "api",
+            RouteId = "api",
+            ClusterId = "api",
+            Host = "api.pefi.co.uk",
+            DestinationAddress = "http://host.docker.internal:8080",
+            Path = null
         };
 
-        var result = service.ToRouteConfig();
+        var result = route.ToRouteConfig();
 
-        Assert.Null(result);
+        Assert.Null(result.Match.Path);
     }
 
     [Fact]
-    public void ToClusterConfig_WithValidPortNumber_ReturnsClusterConfig()
+    public void ToRouteConfig_MapsPath()
     {
-        var service = new GetServiceResponse
+        var route = new PersistedRoute
         {
-            serviceName = "test-service",
-            hostPortNumber = "8080"
+            Id = "api",
+            RouteId = "api",
+            ClusterId = "api",
+            Host = "api.pefi.co.uk",
+            DestinationAddress = "http://host.docker.internal:8080",
+            Path = "/api/{**catch-all}"
         };
 
-        var result = service.ToClusterConfig();
+        var result = route.ToRouteConfig();
 
-        Assert.NotNull(result);
-        Assert.Equal("test-service", result.ClusterId);
-        Assert.NotNull(result.Destinations);
-        Assert.True(result.Destinations.ContainsKey("test-service"));
-        Assert.Equal("http://host.docker.internal:8080", result.Destinations["test-service"].Address);
+        Assert.Equal("/api/{**catch-all}", result.Match.Path);
     }
 
     [Fact]
-    public void ToClusterConfig_WithNullPortNumber_ReturnsNull()
+    public void ToClusterConfig_MapsClusterIdAndDestination()
     {
-        var service = new GetServiceResponse
+        var route = new PersistedRoute
         {
-            serviceName = "test-service",
-            hostPortNumber = null
+            Id = "api",
+            RouteId = "api",
+            ClusterId = "api",
+            Host = "api.pefi.co.uk",
+            DestinationAddress = "http://host.docker.internal:8080"
         };
 
-        var result = service.ToClusterConfig();
+        var result = route.ToClusterConfig();
 
-        Assert.Null(result);
+        Assert.Equal("api", result.ClusterId);
+        Assert.True(result.Destinations!.ContainsKey("destination1"));
+        Assert.Equal("http://host.docker.internal:8080", result.Destinations["destination1"].Address);
     }
 
     [Theory]
-    [InlineData("my-api", "my-api.pefi.co.uk")]
-    [InlineData("payment-service", "payment-service.pefi.co.uk")]
-    [InlineData("auth", "auth.pefi.co.uk")]
-    public void ToRouteConfig_HostNameFormatsAsPefiDomain(string hostName, string expectedHost)
+    [InlineData("http://host.docker.internal:8080")]
+    [InlineData("http://host.docker.internal:3000")]
+    [InlineData("https://external.example.com")]
+    public void ToClusterConfig_PreservesDestinationAddress(string address)
     {
-        var service = new GetServiceResponse
+        var route = new PersistedRoute
         {
-            serviceName = "service",
-            hostName = hostName
+            Id = "svc",
+            RouteId = "svc",
+            ClusterId = "svc",
+            Host = "svc.pefi.co.uk",
+            DestinationAddress = address
         };
 
-        var result = service.ToRouteConfig();
+        var result = route.ToClusterConfig();
 
-        Assert.NotNull(result);
-        Assert.NotNull(result.Match.Hosts);
-        Assert.Contains(expectedHost, result.Match.Hosts);
-    }
-
-    [Theory]
-    [InlineData("8080", "http://host.docker.internal:8080")]
-    [InlineData("3000", "http://host.docker.internal:3000")]
-    [InlineData("443", "http://host.docker.internal:443")]
-    public void ToClusterConfig_AddressFormatsWithDockerInternalHost(string portNumber, string expectedAddress)
-    {
-        var service = new GetServiceResponse
-        {
-            serviceName = "service",
-            hostPortNumber = portNumber
-        };
-
-        var result = service.ToClusterConfig();
-
-        Assert.NotNull(result);
-        Assert.NotNull(result.Destinations);
-        Assert.Equal(expectedAddress, result.Destinations["service"].Address);
-    }
-
-    [Fact]
-    public void ToRouteConfig_RouteIdAndClusterIdMatchServiceName()
-    {
-        var service = new GetServiceResponse
-        {
-            serviceName = "my-unique-service",
-            hostName = "my-unique-service"
-        };
-
-        var result = service.ToRouteConfig();
-
-        Assert.NotNull(result);
-        Assert.Equal(service.serviceName, result.RouteId);
-        Assert.Equal(service.serviceName, result.ClusterId);
-    }
-
-    [Fact]
-    public void ToClusterConfig_DestinationKeyMatchesServiceName()
-    {
-        var service = new GetServiceResponse
-        {
-            serviceName = "my-unique-service",
-            hostPortNumber = "5000"
-        };
-
-        var result = service.ToClusterConfig();
-
-        Assert.NotNull(result);
-        Assert.NotNull(result.Destinations);
-        Assert.True(result.Destinations.ContainsKey("my-unique-service"));
+        Assert.Equal(address, result.Destinations!["destination1"].Address);
     }
 }

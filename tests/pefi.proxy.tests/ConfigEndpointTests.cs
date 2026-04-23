@@ -3,11 +3,8 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
-using pefi.dynamicdns.Services;
 using pefi.persistence;
-using pefi.Rabbit;
 using PeFi.Proxy.Models;
 using Xunit;
 
@@ -25,28 +22,12 @@ public class ConfigEndpointTests : IClassFixture<WebApplicationFactory<Program>>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ServiceManager:baseurl"] = "http://test-service-manager",
-                    ["Messaging:address"] = "localhost",
-                    ["Messaging:username"] = "guest",
-                    ["Messaging:password"] = "guest",
                     ["MongoDB:ConnectionString"] = "mongodb://localhost:27017",
                 });
             });
 
             builder.ConfigureServices(services =>
             {
-                // Replace IMessageBroker with a mock to avoid connecting to RabbitMQ
-                var messageBroker = Substitute.For<IMessageBroker>();
-                var topic = Substitute.For<ITopic>();
-                messageBroker.CreateTopic(Arg.Any<string>()).Returns(Task.FromResult(topic));
-                services.Replace(ServiceDescriptor.Singleton(messageBroker));
-
-                // Replace the HTTP client handler for ServiceManagerClient to avoid
-                // making real network calls to the Service Manager
-                services.AddHttpClient<ServiceManagerClient>()
-                    .ConfigurePrimaryHttpMessageHandler(
-                        () => new MockHttpMessageHandler([]));
-
                 // Replace IDataStore with a mock to avoid connecting to MongoDB
                 var dataStore = Substitute.For<IDataStore>();
                 dataStore.Get<PersistedRoute>(Arg.Any<string>(), Arg.Any<string>())

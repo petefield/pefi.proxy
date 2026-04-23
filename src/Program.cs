@@ -1,4 +1,3 @@
-using pefi;
 using pefi.persistence;
 using PeFi.Proxy;
 using PeFi.Proxy.Models;
@@ -40,12 +39,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddReverseProxy()
     .LoadFromMemory([], [])
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
-
-builder.Services.AddPeFiMessaging(options => {
-    options.Username = builder.Configuration.GetSection("Messaging").GetValue<string>("username") ?? "";
-    options.Password = builder.Configuration.GetSection("Messaging").GetValue<string>("password") ?? "";
-    options.Address = builder.Configuration.GetSection("Messaging").GetValue<string>("address") ?? "";
-});
 
 builder.Services.AddPeFiPersistance(options => {
     options.ConnectionString = builder.Configuration.GetValue<string>("MongoDB:ConnectionString") ?? "";
