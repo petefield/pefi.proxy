@@ -214,6 +214,10 @@ code {
     background: rgba(15, 23, 42, 0.7);
     color: var(--text-primary);
     border: 1px solid rgba(56, 189, 248, 0.2);
+    font-size: 1rem;
+    padding: 0.6rem 0.9rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .route-form-card .form-control:focus {
