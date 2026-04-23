@@ -87,19 +87,7 @@ else if (config is not null)
                         <code>@route.Match.Path</code>
                     </div>
                 }
-                @if (cluster?.Destinations is not null)
-                {
-                    <div class="route-destinations">
-                        <strong>Destinations:</strong>
-                        @foreach (var dest in cluster.Destinations)
-                        {
-                            <div class="destination">
-                                <span class="dest-key">@dest.Key</span>
-                                <span class="dest-address">@dest.Value.Address</span>
-                            </div>
-                        }
-                    </div>
-                }
+
             </div>
         }
     </div>
