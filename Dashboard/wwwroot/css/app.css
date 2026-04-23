@@ -205,8 +205,8 @@ code {
 }
 
 .route-form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 0.75rem;
 }
 
