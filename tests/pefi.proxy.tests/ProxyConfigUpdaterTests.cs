@@ -2,8 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using pefi.dynamicdns.Services;
+using pefi.persistence;
 using pefi.Rabbit;
 using PeFi.Proxy;
+using PeFi.Proxy.Models;
 using Yarp.ReverseProxy.Configuration;
 using Xunit;
 
@@ -17,6 +19,14 @@ public class ProxyConfigUpdaterTests
         services.AddReverseProxy().LoadFromMemory([], []);
         var sp = services.BuildServiceProvider();
         return sp.GetRequiredService<InMemoryConfigProvider>();
+    }
+
+    private static IDataStore<PersistedRoute> EmptyDataStore()
+    {
+        var dataStore = Substitute.For<IDataStore<PersistedRoute>>();
+        dataStore.Get(Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
+            .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
+        return dataStore;
     }
 
     [Fact]
@@ -36,7 +46,8 @@ public class ProxyConfigUpdaterTests
             NullLogger<ProxyConfig>.Instance,
             messageBroker,
             configProvider,
-            serviceManagerClient);
+            serviceManagerClient,
+            EmptyDataStore());
 
         // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
@@ -65,7 +76,8 @@ public class ProxyConfigUpdaterTests
             NullLogger<ProxyConfig>.Instance,
             messageBroker,
             configProvider,
-            serviceManagerClient);
+            serviceManagerClient,
+            EmptyDataStore());
 
         // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
@@ -101,7 +113,8 @@ public class ProxyConfigUpdaterTests
             NullLogger<ProxyConfig>.Instance,
             messageBroker,
             configProvider,
-            serviceManagerClient);
+            serviceManagerClient,
+            EmptyDataStore());
 
         // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
@@ -136,7 +149,8 @@ public class ProxyConfigUpdaterTests
             NullLogger<ProxyConfig>.Instance,
             messageBroker,
             configProvider,
-            serviceManagerClient);
+            serviceManagerClient,
+            EmptyDataStore());
 
         // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
@@ -173,7 +187,8 @@ public class ProxyConfigUpdaterTests
             NullLogger<ProxyConfig>.Instance,
             messageBroker,
             configProvider,
-            serviceManagerClient);
+            serviceManagerClient,
+            EmptyDataStore());
 
         // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
@@ -210,7 +225,8 @@ public class ProxyConfigUpdaterTests
             NullLogger<ProxyConfig>.Instance,
             messageBroker,
             configProvider,
-            serviceManagerClient);
+            serviceManagerClient,
+            EmptyDataStore());
 
         // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
@@ -241,7 +257,8 @@ public class ProxyConfigUpdaterTests
             NullLogger<ProxyConfig>.Instance,
             messageBroker,
             configProvider,
-            serviceManagerClient);
+            serviceManagerClient,
+            EmptyDataStore());
 
         // Act
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));

@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
 using pefi.dynamicdns.Services;
+using pefi.persistence;
 using pefi.Rabbit;
+using PeFi.Proxy.Models;
 using Xunit;
 
 namespace PeFi.Proxy.Tests;
@@ -27,6 +29,7 @@ public class ConfigEndpointTests : IClassFixture<WebApplicationFactory<Program>>
                     ["Messaging:address"] = "localhost",
                     ["Messaging:username"] = "guest",
                     ["Messaging:password"] = "guest",
+                    ["MongoDB:ConnectionString"] = "mongodb://localhost:27017",
                 });
             });
 
@@ -43,6 +46,13 @@ public class ConfigEndpointTests : IClassFixture<WebApplicationFactory<Program>>
                 services.AddHttpClient<ServiceManagerClient>()
                     .ConfigurePrimaryHttpMessageHandler(
                         () => new MockHttpMessageHandler([]));
+
+                // Replace IDataStore<PersistedRoute> with a mock to avoid connecting to MongoDB
+                var dataStore = Substitute.For<IDataStore<PersistedRoute>>();
+                dataStore.Get(Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
+                    .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
+                dataStore.Add(Arg.Any<PersistedRoute>()).Returns(Task.CompletedTask);
+                services.AddSingleton(dataStore);
             });
         });
     }

@@ -1,5 +1,7 @@
 using pefi;
+using pefi.persistence;
 using PeFi.Proxy;
+using PeFi.Proxy.Models;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,6 +47,10 @@ builder.Services.AddPeFiMessaging(options => {
     options.Address = builder.Configuration.GetSection("Messaging").GetValue<string>("address") ?? "";
 });
 
+builder.Services.AddPeFiPersistance(options => {
+    options.ConnectionString = builder.Configuration.GetValue<string>("MongoDB:ConnectionString") ?? "";
+});
+
 var app = builder.Build();
 if (tlsCertificateSelector.HasCertificates)
     app.Lifetime.ApplicationStopping.Register(tlsCertificateSelector.Dispose);
@@ -61,7 +67,7 @@ app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfig
 }).WithName("Get Current Config")
 .WithOpenApi();
 
-app.MapPost("/routes", (CreateRouteRequest request, InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider) =>
+app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider, IDataStore<PersistedRoute> dataStore) =>
 {
     if (string.IsNullOrWhiteSpace(request.RouteId))
         return Results.BadRequest(new { error = "routeId is required." });
@@ -116,6 +122,16 @@ app.MapPost("/routes", (CreateRouteRequest request, InMemoryConfigProvider memor
     });
 
     memoryConfigProvider.Update(routes, clusters);
+
+    await dataStore.Add(new PersistedRoute
+    {
+        Id = routeId,
+        RouteId = routeId,
+        ClusterId = clusterId,
+        Host = host,
+        DestinationAddress = destinationAddress,
+        Path = path
+    });
 
     return Results.Created($"/routes/{routeId}", new CreateRouteResponse(routeId, clusterId, host, destinationAddress, path));
 })

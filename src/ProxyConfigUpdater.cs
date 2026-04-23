@@ -1,5 +1,7 @@
 ﻿using pefi.dynamicdns.Services;
+using pefi.persistence;
 using pefi.Rabbit;
+using PeFi.Proxy.Models;
 using Yarp.ReverseProxy.Configuration;
 
 namespace PeFi.Proxy;
@@ -7,7 +9,8 @@ namespace PeFi.Proxy;
 public class ProxyConfig(ILogger<ProxyConfig> logger,
     IMessageBroker messageBroker,
     InMemoryConfigProvider configProvider,
-    ServiceManagerClient serviceManagerClient) : BackgroundService
+    ServiceManagerClient serviceManagerClient,
+    IDataStore<PersistedRoute> dataStore) : BackgroundService
 {
     private ITopic? _topic;
 
@@ -38,6 +41,13 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
             .Where(cluster => cluster != null)
             .Select(x => x!)
             .ToList();
+
+        var persistedRoutes = await dataStore.Get(_ => true);
+        foreach (var persisted in persistedRoutes)
+        {
+            routes.Add(persisted.ToRouteConfig());
+            clusters.Add(persisted.ToClusterConfig());
+        }
 
         if (routes != null && clusters != null)
             configProvider.Update(routes, clusters);
