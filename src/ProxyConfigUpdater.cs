@@ -42,7 +42,7 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
             .Select(x => x!)
             .ToList();
 
-        var persistedRoutes = await dataStore.Get<PersistedRoute>("routes");
+        var persistedRoutes = await dataStore.Get<PersistedRoute>("routes", _ => true);
         foreach (var persisted in persistedRoutes)
         {
             routes.Add(persisted.ToRouteConfig());

@@ -49,7 +49,7 @@ public class ConfigEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 
                 // Replace IDataStore with a mock to avoid connecting to MongoDB
                 var dataStore = Substitute.For<IDataStore>();
-                dataStore.Get<PersistedRoute>(Arg.Any<string>())
+                dataStore.Get<PersistedRoute>(Arg.Any<string>(), Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
                     .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
                 dataStore.Add<PersistedRoute>(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<PersistedRoute>()).Returns(Task.CompletedTask);
                 services.AddSingleton(dataStore);
