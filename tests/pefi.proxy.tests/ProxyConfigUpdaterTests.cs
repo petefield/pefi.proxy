@@ -24,7 +24,7 @@ public class ProxyConfigUpdaterTests
     private static IDataStore EmptyDataStore()
     {
         var dataStore = Substitute.For<IDataStore>();
-        dataStore.Get<PersistedRoute>(Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
+        dataStore.Get<PersistedRoute>(Arg.Any<string>())
             .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
         return dataStore;
     }

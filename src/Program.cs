@@ -123,7 +123,7 @@ app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider
 
     memoryConfigProvider.Update(routes, clusters);
 
-    await dataStore.Add<PersistedRoute>(new PersistedRoute
+    await dataStore.Add<PersistedRoute>("routes", routeId, new PersistedRoute
     {
         Id = routeId,
         RouteId = routeId,
