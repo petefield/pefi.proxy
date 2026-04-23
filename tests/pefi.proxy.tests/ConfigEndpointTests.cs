@@ -47,11 +47,11 @@ public class ConfigEndpointTests : IClassFixture<WebApplicationFactory<Program>>
                     .ConfigurePrimaryHttpMessageHandler(
                         () => new MockHttpMessageHandler([]));
 
-                // Replace IDataStore<PersistedRoute> with a mock to avoid connecting to MongoDB
-                var dataStore = Substitute.For<IDataStore<PersistedRoute>>();
-                dataStore.Get(Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
+                // Replace IDataStore with a mock to avoid connecting to MongoDB
+                var dataStore = Substitute.For<IDataStore>();
+                dataStore.Get<PersistedRoute>(Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
                     .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
-                dataStore.Add(Arg.Any<PersistedRoute>()).Returns(Task.CompletedTask);
+                dataStore.Add<PersistedRoute>(Arg.Any<PersistedRoute>()).Returns(Task.CompletedTask);
                 services.AddSingleton(dataStore);
             });
         });

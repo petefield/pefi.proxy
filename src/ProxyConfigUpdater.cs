@@ -10,7 +10,7 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
     IMessageBroker messageBroker,
     InMemoryConfigProvider configProvider,
     ServiceManagerClient serviceManagerClient,
-    IDataStore<PersistedRoute> dataStore) : BackgroundService
+    IDataStore dataStore) : BackgroundService
 {
     private ITopic? _topic;
 
@@ -42,7 +42,7 @@ public class ProxyConfig(ILogger<ProxyConfig> logger,
             .Select(x => x!)
             .ToList();
 
-        var persistedRoutes = await dataStore.Get(_ => true);
+        var persistedRoutes = await dataStore.Get<PersistedRoute>(_ => true);
         foreach (var persisted in persistedRoutes)
         {
             routes.Add(persisted.ToRouteConfig());

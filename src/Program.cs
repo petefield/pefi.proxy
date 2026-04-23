@@ -67,7 +67,7 @@ app.MapGet("/config", (InMemoryConfigProvider memoryConfigProvider, IProxyConfig
 }).WithName("Get Current Config")
 .WithOpenApi();
 
-app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider, IDataStore<PersistedRoute> dataStore) =>
+app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider memoryConfigProvider, IProxyConfigProvider appSettingsConfigProvider, IDataStore dataStore) =>
 {
     if (string.IsNullOrWhiteSpace(request.RouteId))
         return Results.BadRequest(new { error = "routeId is required." });
@@ -123,7 +123,7 @@ app.MapPost("/routes", async (CreateRouteRequest request, InMemoryConfigProvider
 
     memoryConfigProvider.Update(routes, clusters);
 
-    await dataStore.Add(new PersistedRoute
+    await dataStore.Add<PersistedRoute>(new PersistedRoute
     {
         Id = routeId,
         RouteId = routeId,

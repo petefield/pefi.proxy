@@ -21,10 +21,10 @@ public class ProxyConfigUpdaterTests
         return sp.GetRequiredService<InMemoryConfigProvider>();
     }
 
-    private static IDataStore<PersistedRoute> EmptyDataStore()
+    private static IDataStore EmptyDataStore()
     {
-        var dataStore = Substitute.For<IDataStore<PersistedRoute>>();
-        dataStore.Get(Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
+        var dataStore = Substitute.For<IDataStore>();
+        dataStore.Get<PersistedRoute>(Arg.Any<System.Linq.Expressions.Expression<Func<PersistedRoute, bool>>>())
             .Returns(Task.FromResult(Enumerable.Empty<PersistedRoute>()));
         return dataStore;
     }
