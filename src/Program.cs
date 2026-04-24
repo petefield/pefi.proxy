@@ -1,3 +1,4 @@
+using OpenTelemetry.Metrics;
 using pefi.persistence;
 using PeFi.Proxy;
 using PeFi.Proxy.Models;
@@ -36,6 +37,12 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics.AddAspNetCoreInstrumentation();
+        metrics.AddPrometheusExporter();
+    });
 builder.Services.AddReverseProxy()
     .LoadFromMemory([], [])
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
@@ -181,7 +188,17 @@ app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseRouting();
-app.MapReverseProxy();
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
+app.MapReverseProxy(pipeline =>
+{
+    pipeline.Use(async (context, next) =>
+    {
+        await next();
+        var feature = context.Features.Get<Yarp.ReverseProxy.Model.IReverseProxyFeature>();
+        if (feature?.Route?.Config?.RouteId is { } routeId)
+            System.Diagnostics.Activity.Current?.SetTag("route.id", routeId);
+    });
+});
 
 app.MapFallbackToFile("/dashboard/{**path:nonfile}", "dashboard/index.html");
 app.MapFallbackToFile("/dashboard", "dashboard/index.html");
