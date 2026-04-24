@@ -58,6 +58,11 @@ builder.Services.AddOpenTelemetry()
     {
         metrics.AddAspNetCoreInstrumentation();
         metrics.AddMeter("pefi.proxy");
+        metrics.AddView("pefi_proxy_request_duration_seconds",
+            new ExplicitBucketHistogramConfiguration
+            {
+                Boundaries = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]
+            });
         metrics.AddPrometheusExporter();
     })
     .WithTracing(tracing =>
