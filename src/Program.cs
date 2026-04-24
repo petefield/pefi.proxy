@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using Serilog;
+using Serilog.Enrichers.Span;
+using Serilog.Formatting.Compact;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -11,7 +14,11 @@ using Yarp.ReverseProxy.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
-builder.Logging.AddConsole();
+
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .ReadFrom.Configuration(ctx.Configuration)
+    .Enrich.WithSpan()
+    .WriteTo.Console(new CompactJsonFormatter()));
 
 var tlsCertificateSelector = TlsCertificateSelector.FromDirectory(builder.Configuration.GetSection("Tls"));
 var httpPort = builder.Configuration.GetValue<int?>("HTTP_PORT") ?? 8080;
