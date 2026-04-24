@@ -1,5 +1,7 @@
 using System.Diagnostics.Metrics;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using pefi.persistence;
 using PeFi.Proxy;
 using PeFi.Proxy.Models;
@@ -51,11 +53,26 @@ var requestDuration = meter.CreateHistogram<double>(
 
 builder.Services.AddSingleton(meter);
 builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService("pefi-proxy"))
     .WithMetrics(metrics =>
     {
         metrics.AddAspNetCoreInstrumentation();
         metrics.AddMeter("pefi.proxy");
         metrics.AddPrometheusExporter();
+    })
+    .WithTracing(tracing =>
+    {
+        var otlpEndpoint = builder.Configuration.GetValue<string>("OTEL_EXPORTER_OTLP_ENDPOINT")
+            ?? "http://localhost:4317";
+        tracing.AddAspNetCoreInstrumentation(o =>
+        {
+            o.EnrichWithHttpRequest = (activity, request) =>
+            {
+                activity.SetTag("proxy.host", request.Host.Value);
+            };
+        });
+        tracing.AddHttpClientInstrumentation();
+        tracing.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
     });
 builder.Services.AddReverseProxy()
     .LoadFromMemory([], [])
