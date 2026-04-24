@@ -1,8 +1,10 @@
+using System.Diagnostics.Metrics;
 using OpenTelemetry.Metrics;
 using pefi.persistence;
 using PeFi.Proxy;
 using PeFi.Proxy.Models;
 using Yarp.ReverseProxy.Configuration;
+using Yarp.ReverseProxy.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -37,10 +39,22 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+var meter = new Meter("pefi.proxy");
+var requestCounter = meter.CreateCounter<long>(
+    "pefi_proxy_requests_total",
+    description: "Total number of requests proxied, tagged by route, method and status code.");
+var requestDuration = meter.CreateHistogram<double>(
+    "pefi_proxy_request_duration_seconds",
+    unit: "s",
+    description: "Duration of proxied requests in seconds.");
+
+builder.Services.AddSingleton(meter);
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics =>
     {
         metrics.AddAspNetCoreInstrumentation();
+        metrics.AddMeter("pefi.proxy");
         metrics.AddPrometheusExporter();
     });
 builder.Services.AddReverseProxy()
@@ -193,10 +207,21 @@ app.MapReverseProxy(pipeline =>
 {
     pipeline.Use(async (context, next) =>
     {
+        var start = DateTime.UtcNow;
         await next();
-        var feature = context.Features.Get<Yarp.ReverseProxy.Model.IReverseProxyFeature>();
-        if (feature?.Route?.Config?.RouteId is { } routeId)
-            System.Diagnostics.Activity.Current?.SetTag("route.id", routeId);
+        var elapsed = (DateTime.UtcNow - start).TotalSeconds;
+        var feature = context.Features.Get<IReverseProxyFeature>();
+        var routeId = feature?.Route?.Config?.RouteId ?? "unknown";
+        var method = context.Request.Method;
+        var status = context.Response.StatusCode.ToString();
+        requestCounter.Add(1,
+            new KeyValuePair<string, object?>("route", routeId),
+            new KeyValuePair<string, object?>("method", method),
+            new KeyValuePair<string, object?>("status_code", status));
+        requestDuration.Record(elapsed,
+            new KeyValuePair<string, object?>("route", routeId),
+            new KeyValuePair<string, object?>("method", method),
+            new KeyValuePair<string, object?>("status_code", status));
     });
 });
 
