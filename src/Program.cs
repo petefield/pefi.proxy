@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -236,6 +237,7 @@ app.MapReverseProxy(pipeline =>
         var routeId = feature?.Route?.Config?.RouteId ?? "unknown";
         var method = context.Request.Method;
         var status = context.Response.StatusCode.ToString();
+        Activity.Current?.SetTag("proxy.route", routeId);
         requestCounter.Add(1,
             new KeyValuePair<string, object?>("route", routeId),
             new KeyValuePair<string, object?>("method", method),
